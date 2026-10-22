@@ -1,0 +1,8 @@
+negosyoos.com {
+	encode zstd gzip
+	reverse_proxy negosyoos:3000
+}
+
+www.negosyoos.com {
+	redir https://negosyoos.com{uri} permanent
+}

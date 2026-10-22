@@ -1,0 +1,26 @@
+{
+  "name": "@negosyo-os/auth",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./authorization": "./src/authorization.ts",
+    "./capability": "./src/capability.ts",
+    "./authorization-policy": "./src/authorization-policy.ts",
+    "./identity": "./src/identity.ts",
+    "./schemas": "./src/schemas.ts",
+    "./client": "./src/supabase/client.ts",
+    "./server": "./src/supabase/server.ts",
+    "./proxy": "./src/supabase/proxy.ts"
+  },
+  "dependencies": {
+    "@negosyo-os/core": "*",
+    "@negosyo-os/database": "*",
+    "@supabase/ssr": "0.12.5",
+    "@supabase/supabase-js": "2.112.4",
+    "next": "16.3.2",
+    "server-only": "0.0.1",
+    "zod": "4.4.3"
+  }
+}

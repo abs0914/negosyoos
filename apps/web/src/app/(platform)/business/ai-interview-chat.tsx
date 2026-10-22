@@ -1,0 +1,7 @@
+"use client";
+
+import { useActionState, useEffect, useRef } from "react";
+import { answerBusinessInterviewAction, type AiInterviewActionState } from "./ai-interview-actions";
+
+const initial:AiInterviewActionState={};
+export function AiInterviewChat({businessId,interviewId}:{businessId:string;interviewId:string}){const[state,action,pending]=useActionState(answerBusinessInterviewAction.bind(null,businessId,interviewId),initial),form=useRef<HTMLFormElement>(null);useEffect(()=>{if(state.status==="success")form.current?.reset();},[state]);return <form action={action} className="sticky bottom-4 rounded-2xl border bg-card p-4 shadow-lg" ref={form}><label className="text-sm font-medium" htmlFor="interview-answer">Reply naturally—short or detailed is fine</label><textarea autoFocus className="mt-2 min-h-24 w-full rounded-xl border bg-background p-3" id="interview-answer" maxLength={2000} name="answer" placeholder="Tell me how it works in your business…" required/><div className="mt-3 flex items-center justify-between gap-3"><p className={state.status==="error"?"text-sm text-destructive":"text-xs text-muted-foreground"}>{state.message??"Your answer updates the structured profile shown alongside the conversation."}</p><button className="min-h-11 shrink-0 rounded-lg bg-primary px-5 font-semibold text-primary-foreground disabled:opacity-50" disabled={pending}>{pending?"Understanding…":"Send"}</button></div></form>}

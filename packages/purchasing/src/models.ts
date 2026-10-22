@@ -1,0 +1,13 @@
+export type PurchaseRequestStatus="draft"|"pending_approval"|"approved"|"rejected"|"cancelled"|"converted";
+export type PurchaseOrderStatus="draft"|"issued"|"partially_received"|"received"|"cancelled";
+export interface Supplier{id:string;businessId:string;code:string;name:string;contactPerson:string|null;mobile:string|null;email:string|null;address:string|null;taxId:string|null;paymentTermsDays:number;status:"active"|"inactive";notes:string|null;createdAt:string;updatedAt:string}
+export interface PurchasingCatalogItem{productVariantId:string;description:string;sku:string;unit:string;cost:number}
+export interface PurchaseRequestLine{id:string;productVariantId:string;description:string;quantity:number;estimatedUnitCost:number;position:number}
+export interface PurchaseRequest{id:string;businessId:string;branchId:string;requestNumber:string;requestedBy:string;neededBy:string|null;purpose:string;status:PurchaseRequestStatus;approvalRequestId:string|null;estimatedTotal:number;createdAt:string;updatedAt:string;lines:readonly PurchaseRequestLine[]}
+export interface PurchaseOrderLine{id:string;productVariantId:string;description:string;quantityOrdered:number;quantityReceived:number;quantityOutstanding:number;unitCost:number;taxRate:number;subtotal:number;taxAmount:number;total:number;position:number}
+export interface PurchaseOrder{id:string;businessId:string;branchId:string;supplierId:string;supplierName:string;purchaseRequestId:string|null;orderNumber:string;orderDate:string;expectedDate:string|null;status:PurchaseOrderStatus;supplierReference:string|null;notes:string|null;subtotal:number;taxTotal:number;total:number;createdAt:string;updatedAt:string;lines:readonly PurchaseOrderLine[]}
+export interface GoodsReceipt{id:string;receiptNumber:string;purchaseOrderId:string;branchId:string;inventoryLocationId:string;receivedAt:string;supplierDeliveryReference:string|null;notes:string|null;receivedBy:string;createdAt:string}
+export interface SupplierInvoice{id:string;supplierId:string;purchaseOrderId:string|null;supplierInvoiceNumber:string;invoiceDate:string;dueDate:string;status:string;subtotal:number;taxTotal:number;total:number;createdAt:string}
+export interface PurchaseOrderDetails{order:PurchaseOrder;receipts:readonly GoodsReceipt[];supplierInvoices:readonly SupplierInvoice[];audit:readonly{event:string;actorId:string;details:Readonly<Record<string,unknown>>;createdAt:string}[]}
+export interface PurchasingDashboard{openRequests:number;pendingApprovals:number;openOrders:number;partiallyReceived:number;recentReceipts:readonly GoodsReceipt[]}
+export interface SupplierHistory{supplier:Supplier;orders:readonly PurchaseOrder[];invoices:readonly SupplierInvoice[];receipts:readonly GoodsReceipt[]}

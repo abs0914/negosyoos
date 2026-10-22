@@ -1,0 +1,16 @@
+import { describe,expect,it } from "vitest";
+import { SystemBuilderExplanationSchema,interpretSystemBuilderInstruction,type SystemBuilderContext } from "./system-builder";
+
+const context: SystemBuilderContext={revision:4,moduleKeys:new Set(["sales","inventory","expenses","crm"]),objectIds:new Map([["quotation","11111111-1111-4111-8111-111111111111"]]),objectKeys:new Set(["quotation","customer"]),roleKeys:new Set(["cashier","manager"]),permissionKeys:new Set(["expenses.read","sales.read","reports.read"]),workflowKeys:new Set(),reportKeys:new Set(),dashboardKeys:new Set()};
+const operations=(request:string)=>{const result=interpretSystemBuilderInstruction(request,context);expect(result.kind).toBe("proposal");return result.kind==="proposal"?result.operations:[];};
+describe("AI System Builder interpreter",()=>{
+ it("adds a plain-language field through the strict DSL",()=>{expect(operations("Add contractor name to quotations.")[0]).toMatchObject({operation:"add_field",objectKey:"quotation",field:{key:"contractor_name",label:"Contractor Name",type:"text"}});});
+ it("removes cashier expense visibility without broad role changes",()=>{expect(operations("My cashier should not see expenses.")[0]).toEqual({operation:"update_permission",roleKey:"cashier",permissionKey:"expenses.read",enabled:false});});
+ it("creates the manager discount approval workflow",()=>{const operation=operations("Require manager approval for discounts above 10%.")[0];expect(operation).toMatchObject({operation:"add_workflow",workflow:{status:"active",configuration:{trigger:{type:"record.updated"},conditions:{conditions:[{fieldKey:"discount_percentage",operator:"greater_than",value:10}]},actions:[{type:"request_approval",approverRoleKey:"manager"}]}}});});
+ it("creates and wires a reusable low-stock report and dashboard widget",()=>{expect(operations("Show low stock on my dashboard.").map(item=>item.operation)).toEqual(["add_report","add_dashboard_widget"]);});
+ it("creates an unpaid contractor accounts report with bounded core reporting",()=>{expect(operations("Create a report for unpaid contractor accounts.")[0]).toMatchObject({operation:"add_report",report:{queryConfig:{provider:"core_report",source:"invoices",limit:100}}});});
+ it("asks for clarification instead of guessing unknown or executable requests",()=>{for(const request of ["Execute SQL to alter quotations","Run JavaScript that calls an API"]){const result=interpretSystemBuilderInstruction(request,context);expect(result.kind).toBe("clarification");expect(JSON.stringify(result)).not.toMatch(/```|select \*|fetch\(/i);}});
+ it("keeps raw operations outside the user explanation schema",()=>{const result=interpretSystemBuilderInstruction("Show low stock on my dashboard.",context);if(result.kind!=="proposal")throw new Error("Expected proposal");expect(()=>SystemBuilderExplanationSchema.parse({...result.explanation,operations:result.operations})).toThrow();});
+ it("creates tenant-owned extension metadata for a known core object",()=>{expect(operations("Add tracking note to deliveries").map(item=>item.operation)).toEqual(["add_object","add_field"]);});
+ it("refuses disconnected custom fields for unknown objects",()=>{const result=interpretSystemBuilderInstruction("Add captain name to spaceships",context);expect(result.kind).toBe("clarification");});
+});

@@ -1,0 +1,5 @@
+export type LoyaltyRuleType="earn"|"redeem";
+export interface LoyaltyRule{id:string;name:string;ruleType:LoyaltyRuleType;spendAmount:number|null;pointsAmount:number;redemptionValue:number|null;priority:number;expiryDays:number|null;isActive:boolean;updatedAt:string}
+export interface CustomerLoyaltyBalance{customerId:string;customerName:string;mobile:string|null;pointsBalance:number;lifetimeEarned:number;lifetimeRedeemed:number;lifetimeExpired:number;updatedAt:string|null}
+export interface LoyaltyTransaction{id:string;customerId:string;customerName:string;transactionType:"earn"|"redeem"|"expire"|"adjust";pointsDelta:number;balanceAfter:number;ruleName:string|null;saleId:string|null;monetaryValue:number;description:string|null;createdAt:string}
+export interface LoyaltyDashboard{totalOutstandingPoints:number;enrolledCustomers:number;lifetimePointsEarned:number;expiringPoints:number;rules:readonly LoyaltyRule[];balances:readonly CustomerLoyaltyBalance[];transactions:readonly LoyaltyTransaction[]}

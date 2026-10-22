@@ -1,0 +1,3 @@
+export function projectedWeightedAverage(currentQuantity:number,currentAverageCost:number,quantityDelta:number,incomingUnitCost:number):number{if(quantityDelta<=0)return currentAverageCost;const next=currentQuantity+quantityDelta;if(next<=0)return 0;return((currentQuantity*currentAverageCost)+(quantityDelta*incomingUnitCost))/next;}
+export function stockState(quantity:number,threshold:number):"out_of_stock"|"low_stock"|"healthy"{if(quantity<=0)return"out_of_stock";return quantity<=threshold?"low_stock":"healthy";}
+export function deterministicBalanceLockOrder(inventoryItemIds:readonly string[],locationIds:readonly string[]):readonly string[]{return[...new Set(inventoryItemIds.flatMap(itemId=>locationIds.map(locationId=>`${itemId}:${locationId}`)))].sort();}

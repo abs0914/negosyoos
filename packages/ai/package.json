@@ -1,0 +1,8 @@
+{
+  "name": "@negosyo-os/ai",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts", "./server": "./src/server.ts" },
+  "dependencies": { "@negosyo-os/analytics": "*", "@negosyo-os/auth": "*", "@negosyo-os/billing": "*", "@negosyo-os/business": "*", "@negosyo-os/configuration": "*", "@negosyo-os/core": "*", "@negosyo-os/database": "*", "zod": "4.4.3" }
+}

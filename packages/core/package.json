@@ -1,0 +1,16 @@
+{
+  "name": "@negosyo-os/core",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./env": "./src/config/env.ts",
+    "./errors": "./src/errors/app-error.ts",
+    "./http": "./src/http/api-response.ts",
+    "./logging": "./src/logging/logger.ts",
+    "./permissions": "./src/access-control/permissions.ts",
+    "./platform": "./src/platform/domain-registry.ts"
+  },
+  "dependencies": { "zod": "4.4.3" }
+}

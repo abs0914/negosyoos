@@ -1,0 +1,30 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+select plan(17);
+insert into auth.users(instance_id,id,aud,role,email,encrypted_password,email_confirmed_at,created_at,updated_at)values
+('00000000-0000-0000-0000-000000000000','92900000-0000-4000-8000-000000000001','authenticated','authenticated','health-owner@example.test','',now(),now(),now()),
+('00000000-0000-0000-0000-000000000000','92900000-0000-4000-8000-000000000002','authenticated','authenticated','health-outsider@example.test','',now(),now(),now());
+set local role authenticated;select set_config('request.jwt.claim.sub','92900000-0000-4000-8000-000000000001',true);select set_config('request.jwt.claims','{"sub":"92900000-0000-4000-8000-000000000001","role":"authenticated"}',true);select public.create_business('health-assessment-test','Health Assessment Test','Health Assessment Test','corporation','retail','{"city":"Manila"}');select set_config('test.health_org',(select id::text from public.organizations where slug='health-assessment-test'),true);
+select is(public.can_business_permission(current_setting('test.health_org')::uuid,'ai.manage'),true,'Owner can complete assessment');
+select set_config('test.health_scores','{"overallBusinessHealth":55,"salesHealth":63,"cashflow":50,"inventory":25,"customerManagement":63,"operations":58,"digitalReadiness":50,"areas":{"sales":75,"profitability":50,"cashflow":50,"inventory":25,"customers":75,"operations":50,"employees":50,"digital_readiness":50,"marketing":50,"record_keeping":75}}',true);
+select set_config('test.health_responses',(select jsonb_object_agg('question_'||value,2)::text from generate_series(1,20)value),true);
+select set_config('test.health_id',(select public.save_business_health_assessment(current_setting('test.health_org')::uuid,'retail_hardware',current_setting('test.health_responses')::jsonb,current_setting('test.health_scores')::jsonb,array['Sales','Customers'],array['Inventory','Cashflow'])::text),true);
+select ok(current_setting('test.health_id')::uuid is not null,'Completed assessment is stored');
+select is((select scores->>'overallBusinessHealth'from public.business_health_assessments where id=current_setting('test.health_id')::uuid),'55','Overall score is retained');
+select is((select completed_by from public.business_health_assessments where id=current_setting('test.health_id')::uuid),auth.uid(),'Assessment records its author');
+select is((select latest_assessment_id from public.business_profiles where organization_id=current_setting('test.health_org')::uuid),current_setting('test.health_id')::uuid,'BusinessProfile points to the assessment');
+select is((select profile#>>'{healthAssessment,scores,inventory}'from public.business_profiles where organization_id=current_setting('test.health_org')::uuid),'25','BusinessProfile stores scores for recommendation context');
+select set_config('test.health_interview',(select public.start_ai_business_interview(current_setting('test.health_org')::uuid,'Tell me about the business.')::text),true);
+select is((select profile#>>'{healthAssessment,assessmentId}'from public.ai_business_interviews where id=current_setting('test.health_interview')::uuid),current_setting('test.health_id'),'New AI onboarding receives retained assessment context');
+select lives_ok($$select public.save_business_health_assessment(current_setting('test.health_org')::uuid,'retail_hardware',current_setting('test.health_responses')::jsonb,current_setting('test.health_scores')::jsonb,array['Sales'],array['Inventory'])$$,'A later assessment is retained as a new report');
+select is((select count(*)from public.business_health_assessments where organization_id=current_setting('test.health_org')::uuid),2::bigint,'Assessment history is not discarded');
+select is((select count(*)from public.business_profiles where organization_id=current_setting('test.health_org')::uuid),1::bigint,'BusinessProfile remains a single evolving context');
+select throws_ok($$select public.save_business_health_assessment(current_setting('test.health_org')::uuid,'retail_hardware','{"one":5}'::jsonb,current_setting('test.health_scores')::jsonb,array['Sales'],array['Inventory'])$$,'22023','Invalid Business Health Assessment.','Incomplete responses are rejected');
+select throws_ok($$insert into public.business_health_assessments(organization_id,industry,responses,scores,strengths,priorities,completed_by)values(current_setting('test.health_org')::uuid,'retail_hardware',current_setting('test.health_responses')::jsonb,current_setting('test.health_scores')::jsonb,array['Sales'],array['Inventory'],auth.uid())$$,'42501','permission denied for table business_health_assessments','Clients cannot bypass the scoring save RPC');
+select throws_ok($$update public.business_profiles set profile='{}'where organization_id=current_setting('test.health_org')::uuid$$,'42501','permission denied for table business_profiles','Clients cannot erase BusinessProfile assessment context');
+select set_config('request.jwt.claim.sub','92900000-0000-4000-8000-000000000002',true);select set_config('request.jwt.claims','{"sub":"92900000-0000-4000-8000-000000000002","role":"authenticated"}',true);
+select is((select count(*)from public.business_health_assessments),0::bigint,'RLS hides another Business assessment history');
+select is((select count(*)from public.business_profiles),0::bigint,'RLS hides another BusinessProfile');
+select throws_ok($$select public.save_business_health_assessment(current_setting('test.health_org')::uuid,'retail_hardware',current_setting('test.health_responses')::jsonb,current_setting('test.health_scores')::jsonb,array['Sales'],array['Inventory'])$$,'42501','Permission denied.','Outsider cannot save another Business assessment');
+select throws_ok($$select public.start_ai_business_interview(current_setting('test.health_org')::uuid,'Cross tenant')$$,'42501','Permission denied.','Outsider cannot use retained profile context');
+select *from finish();rollback;

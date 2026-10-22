@@ -1,0 +1,39 @@
+{
+  "name": "negosyo-os",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm --workspace @negosyo-os/web run dev",
+    "build": "npm --workspace @negosyo-os/web run build",
+    "start": "npm --workspace @negosyo-os/web run start",
+    "lint": "eslint apps packages --max-warnings=0",
+    "typecheck": "npm --workspace @negosyo-os/web run typecheck && tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:db": "supabase test db --local --workdir packages/database",
+    "test:watch": "vitest",
+    "db:start": "supabase start --workdir packages/database",
+    "db:stop": "supabase stop --workdir packages/database",
+    "db:reset": "supabase db reset --workdir packages/database",
+    "db:types": "supabase gen types typescript --local --workdir packages/database > packages/database/src/database.types.ts"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "20.19.43",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.5",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.2",
+    "supabase": "2.115.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3",
+    "vitest": "4.1.11"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

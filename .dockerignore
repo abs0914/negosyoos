@@ -1,0 +1,12 @@
+.git
+.gitignore
+**/.next
+**/node_modules
+**/*.tsbuildinfo
+**/.env*
+!**/.env.example
+coverage
+docs
+output
+tmp
+npm-debug.log*

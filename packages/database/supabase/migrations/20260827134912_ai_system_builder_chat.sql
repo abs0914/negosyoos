@@ -1,0 +1,41 @@
+-- Module 27: auditable chat sessions over the safe Configuration DSL.
+create table public.ai_system_builder_sessions(
+ id uuid primary key default gen_random_uuid(),organization_id uuid not null references public.organizations(id)on delete cascade,
+ title text not null check(char_length(btrim(title))between 1 and 160),created_by uuid not null references auth.users(id),
+ created_at timestamptz not null default now(),updated_at timestamptz not null default now(),unique(id,organization_id)
+);
+create table public.ai_system_builder_messages(
+ id uuid primary key default gen_random_uuid(),organization_id uuid not null references public.organizations(id)on delete cascade,session_id uuid not null,
+ role text not null check(role in('assistant','user')),content text not null check(char_length(btrim(content))between 1 and 3000),
+ proposal_id uuid,explanation jsonb check(explanation is null or jsonb_typeof(explanation)='object'),created_at timestamptz not null default now(),
+ foreign key(session_id,organization_id)references public.ai_system_builder_sessions(id,organization_id)on delete cascade,
+ foreign key(proposal_id,organization_id)references public.configuration_change_sets(id,organization_id)on delete restrict,
+ check((role='user'and proposal_id is null and explanation is null)or role='assistant')
+);
+create table public.ai_system_builder_events(
+ id uuid primary key default gen_random_uuid(),organization_id uuid not null references public.organizations(id)on delete cascade,session_id uuid not null,message_id uuid,proposal_id uuid,
+ event text not null check(event in('session_started','request_interpreted','clarification_requested','validation_failed')),
+ actor_id uuid not null references auth.users(id),details jsonb not null default'{}'check(jsonb_typeof(details)='object'),created_at timestamptz not null default now(),
+ foreign key(session_id,organization_id)references public.ai_system_builder_sessions(id,organization_id)on delete cascade,
+ foreign key(proposal_id,organization_id)references public.configuration_change_sets(id,organization_id)on delete restrict,
+ foreign key(message_id)references public.ai_system_builder_messages(id)on delete set null
+);
+create index ai_system_builder_sessions_history_idx on public.ai_system_builder_sessions(organization_id,updated_at desc);
+create index ai_system_builder_messages_thread_idx on public.ai_system_builder_messages(organization_id,session_id,created_at,id);
+create index ai_system_builder_events_audit_idx on public.ai_system_builder_events(organization_id,session_id,created_at,id);
+create trigger set_updated_at before update on public.ai_system_builder_sessions for each row execute function private.set_updated_at();
+
+create function public.start_ai_system_builder_session(requested_organization_id uuid,requested_title text,initial_message text)returns uuid language plpgsql security definer set search_path=''as $$
+declare actor uuid:=(select auth.uid());session_key uuid;message_key uuid;begin if actor is null or not private.can_business_permission(requested_organization_id,'ai.manage',null)then raise exception'Permission denied.'using errcode='42501';end if;if char_length(btrim(requested_title))not between 1 and 160 or char_length(btrim(initial_message))not between 1 and 3000 then raise exception'Invalid builder session.'using errcode='22023';end if;insert into public.ai_system_builder_sessions(organization_id,title,created_by)values(requested_organization_id,btrim(requested_title),actor)returning id into session_key;insert into public.ai_system_builder_messages(organization_id,session_id,role,content)values(requested_organization_id,session_key,'assistant',btrim(initial_message))returning id into message_key;insert into public.ai_system_builder_events(organization_id,session_id,message_id,event,actor_id)values(requested_organization_id,session_key,message_key,'session_started',actor);return session_key;end;$$;
+
+create function public.record_ai_system_builder_exchange(requested_organization_id uuid,requested_session_id uuid,user_request text,assistant_response text,linked_proposal_id uuid default null,change_explanation jsonb default null,outcome text default'clarification_requested')returns void language plpgsql security definer set search_path=''as $$
+declare actor uuid:=(select auth.uid());assistant_message uuid;begin if actor is null or not private.can_business_permission(requested_organization_id,'ai.manage',null)then raise exception'Permission denied.'using errcode='42501';end if;if outcome not in('request_interpreted','clarification_requested','validation_failed')or char_length(btrim(user_request))not between 3 and 2000 or char_length(btrim(assistant_response))not between 1 and 3000 or(change_explanation is not null and jsonb_typeof(change_explanation)<>'object')then raise exception'Invalid builder exchange.'using errcode='22023';end if;if not exists(select 1 from public.ai_system_builder_sessions where id=requested_session_id and organization_id=requested_organization_id)then raise exception'Builder session not found.'using errcode='P0001';end if;if linked_proposal_id is not null and not exists(select 1 from public.configuration_change_sets where id=linked_proposal_id and organization_id=requested_organization_id and source='ai')then raise exception'Proposal does not belong to this Business.'using errcode='42501';end if;if(outcome='request_interpreted')<>(linked_proposal_id is not null and change_explanation is not null)then raise exception'Interpreted requests require a validated proposal and explanation.'using errcode='22023';end if;
+ insert into public.ai_system_builder_messages(organization_id,session_id,role,content)values(requested_organization_id,requested_session_id,'user',btrim(user_request));insert into public.ai_system_builder_messages(organization_id,session_id,role,content,proposal_id,explanation)values(requested_organization_id,requested_session_id,'assistant',btrim(assistant_response),linked_proposal_id,change_explanation)returning id into assistant_message;update public.ai_system_builder_sessions set title=case when title='New system design'then left(btrim(user_request),160)else title end where id=requested_session_id;insert into public.ai_system_builder_events(organization_id,session_id,message_id,proposal_id,event,actor_id,details)values(requested_organization_id,requested_session_id,assistant_message,linked_proposal_id,outcome,actor,jsonb_build_object('requestLength',char_length(btrim(user_request))));end;$$;
+
+alter table public.ai_system_builder_sessions enable row level security;alter table public.ai_system_builder_messages enable row level security;alter table public.ai_system_builder_events enable row level security;
+create policy ai_system_builder_sessions_read on public.ai_system_builder_sessions for select to authenticated using(private.can_business_permission(organization_id,'ai.read',null)or private.can_business_permission(organization_id,'ai.manage',null));
+create policy ai_system_builder_messages_read on public.ai_system_builder_messages for select to authenticated using(private.can_business_permission(organization_id,'ai.read',null)or private.can_business_permission(organization_id,'ai.manage',null));
+create policy ai_system_builder_events_read on public.ai_system_builder_events for select to authenticated using(private.can_business_permission(organization_id,'ai.read',null)or private.can_business_permission(organization_id,'ai.manage',null));
+revoke all on public.ai_system_builder_sessions,public.ai_system_builder_messages,public.ai_system_builder_events from public,anon,authenticated;grant select on public.ai_system_builder_sessions,public.ai_system_builder_messages,public.ai_system_builder_events to authenticated;
+revoke all on function public.start_ai_system_builder_session(uuid,text,text),public.record_ai_system_builder_exchange(uuid,uuid,text,text,uuid,jsonb,text)from public,anon;grant execute on function public.start_ai_system_builder_session(uuid,text,text),public.record_ai_system_builder_exchange(uuid,uuid,text,text,uuid,jsonb,text)to authenticated;
+comment on table public.ai_system_builder_messages is'Immutable natural-language requests and safe proposal explanations. Raw DSL stays in the guarded configuration proposal table.';

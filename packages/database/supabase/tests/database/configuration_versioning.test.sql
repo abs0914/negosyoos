@@ -1,0 +1,38 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+select plan(24);
+insert into auth.users(instance_id,id,aud,role,email,encrypted_password,email_confirmed_at,created_at,updated_at)values
+('00000000-0000-0000-0000-000000000000','92800000-0000-4000-8000-000000000001','authenticated','authenticated','version-owner@example.test','',now(),now(),now()),
+('00000000-0000-0000-0000-000000000000','92800000-0000-4000-8000-000000000002','authenticated','authenticated','version-outsider@example.test','',now(),now(),now());
+set local role authenticated;select set_config('request.jwt.claim.sub','92800000-0000-4000-8000-000000000001',true);select set_config('request.jwt.claims','{"sub":"92800000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+select public.create_business('configuration-version-test','Configuration Version Test','Configuration Version Test','corporation','retail','{"city":"Manila"}');select set_config('test.version_org',(select id::text from public.organizations where slug='configuration-version-test'),true);
+select set_config('test.version_p1',(select public.submit_ai_configuration_proposal(current_setting('test.version_org')::uuid,'Rename customers','Use client terminology','[{"operation":"rename_entity","entityKey":"customer","singularLabel":"Client","pluralLabel":"Clients"}]',0)::text),true);
+select lives_ok($$select public.review_ai_configuration_proposal(current_setting('test.version_org')::uuid,current_setting('test.version_p1')::uuid,'approved')$$,'Version one can be approved');
+select lives_ok($$select public.begin_ai_configuration_apply(current_setting('test.version_org')::uuid,current_setting('test.version_p1')::uuid)$$,'Version one apply starts');
+select lives_ok($$select public.complete_ai_configuration_apply(current_setting('test.version_org')::uuid,current_setting('test.version_p1')::uuid,'[{"kind":"entity_label","entityKey":"customer","before":null}]')$$,'Version one apply and ledger write are atomic');
+select is((select count(*)from public.configuration_versions where organization_id=current_setting('test.version_org')::uuid),2::bigint,'The initial baseline and applied version are retained');
+select is((select source||':'||version from public.configuration_versions where organization_id=current_setting('test.version_org')::uuid and version=1),'ai:1','AI source and version number are recorded');
+select is((select author_id from public.configuration_versions where organization_id=current_setting('test.version_org')::uuid and version=1),auth.uid(),'Version records its author');
+select is((select description from public.configuration_versions where organization_id=current_setting('test.version_org')::uuid and version=1),'Use client terminology','Version records its description');
+select is((select changes#>>'{operations,0,operation}'from public.configuration_versions where organization_id=current_setting('test.version_org')::uuid and version=1),'rename_entity','Version records declarative changes');
+select set_config('test.version_p2',(select public.submit_ai_configuration_proposal(current_setting('test.version_org')::uuid,'Rename products','Use item terminology','[{"operation":"rename_entity","entityKey":"product","singularLabel":"Item","pluralLabel":"Items"}]',1)::text),true);
+select lives_ok($$select public.review_ai_configuration_proposal(current_setting('test.version_org')::uuid,current_setting('test.version_p2')::uuid,'approved')$$,'Version two can be approved');
+select lives_ok($$select public.begin_ai_configuration_apply(current_setting('test.version_org')::uuid,current_setting('test.version_p2')::uuid)$$,'Version two apply starts');
+select lives_ok($$select public.complete_ai_configuration_apply(current_setting('test.version_org')::uuid,current_setting('test.version_p2')::uuid,'[{"kind":"entity_label","entityKey":"product","before":null}]')$$,'Version two is appended');
+select is((select count(*)from public.configuration_versions where organization_id=current_setting('test.version_org')::uuid),3::bigint,'History is append-only across changes');
+select set_config('test.restore',(select (public.begin_configuration_version_restore(current_setting('test.version_org')::uuid,1)->>'restoreId')),true);
+select throws_ok($$select public.begin_configuration_version_restore(current_setting('test.version_org')::uuid,1)$$,'P0001','A configuration restore is already in progress.','A second concurrent restore is rejected');
+select is((select status from public.configuration_version_restores where id=current_setting('test.restore')::uuid),'applying','Restore has an explicit in-progress state');
+select is(public.complete_configuration_version_restore(current_setting('test.version_org')::uuid,current_setting('test.restore')::uuid),3::bigint,'Restore appends a new optimistic revision');
+select is((select source||':'||restores_version||':'||version from public.configuration_versions where organization_id=current_setting('test.version_org')::uuid and version=3),'system:1:3','Restore creates a system version pointing to the restored version');
+select is((select count(*)from public.configuration_versions where organization_id=current_setting('test.version_org')::uuid),4::bigint,'Restore never deletes previous history');
+select throws_ok($$update public.configuration_versions set description='tampered'where organization_id=current_setting('test.version_org')::uuid and version=1$$,'42501','permission denied for table configuration_versions','Clients cannot rewrite version history');
+select throws_ok($$delete from public.configuration_versions where organization_id=current_setting('test.version_org')::uuid and version=1$$,'42501','permission denied for table configuration_versions','Clients cannot delete version history');
+select set_config('test.failed_restore',(select (public.begin_configuration_version_restore(current_setting('test.version_org')::uuid,0)->>'restoreId')),true);
+select lives_ok($$select public.fail_configuration_version_restore(current_setting('test.version_org')::uuid,current_setting('test.failed_restore')::uuid,'Simulated client restoration failure')$$,'Failed restore can be closed safely');
+select is((select revision from public.organization_configuration_revisions where organization_id=current_setting('test.version_org')::uuid),3::bigint,'Failed restore never advances the live revision');
+select is((select status from public.configuration_version_restores where id=current_setting('test.failed_restore')::uuid),'failed','Failed restore retains an audit state');
+select set_config('request.jwt.claim.sub','92800000-0000-4000-8000-000000000002',true);select set_config('request.jwt.claims','{"sub":"92800000-0000-4000-8000-000000000002","role":"authenticated"}',true);
+select is((select count(*)from public.configuration_versions),0::bigint,'RLS hides another Business version history');
+select throws_ok($$select public.begin_configuration_version_restore(current_setting('test.version_org')::uuid,1)$$,'42501','Permission denied.','An outsider cannot restore another Business');
+select *from finish();rollback;

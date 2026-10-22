@@ -1,0 +1,36 @@
+begin;create extension if not exists pgtap with schema extensions;select plan(13);
+insert into auth.users(instance_id,id,aud,role,email,encrypted_password,email_confirmed_at,created_at,updated_at)values
+('00000000-0000-0000-0000-000000000000','99900000-0000-4000-8000-000000000031','authenticated','authenticated','report-owner@example.test','',now(),now(),now()),
+('00000000-0000-0000-0000-000000000000','99900000-0000-4000-8000-000000000032','authenticated','authenticated','report-outsider@example.test','',now(),now(),now());
+set local role authenticated;select set_config('request.jwt.claim.sub','99900000-0000-4000-8000-000000000031',true);select set_config('request.jwt.claims','{"sub":"99900000-0000-4000-8000-000000000031","role":"authenticated"}',true);
+select public.create_business('trial-report','Trial Report Inc','Trial Report','sole_proprietorship','retail','{"city":"Manila"}');
+select set_config('test.report_org',(select id::text from public.organizations where slug='trial-report'),true);
+select set_config('test.report_branch',(select id::text from public.branches where organization_id=current_setting('test.report_org')::uuid and code='main'),true);
+select set_config('test.report_version',(select version.id::text from public.business_os_template_versions version join public.business_os_templates template on template.id=version.template_id where template.key='retail-store-os'and version.status='published'order by version.version desc limit 1),true);
+select public.install_business_os_template(current_setting('test.report_org')::uuid,current_setting('test.report_version')::uuid);
+select public.set_business_module_state(current_setting('test.report_org')::uuid,'product_catalog',true,'{}');
+select public.set_business_module_state(current_setting('test.report_org')::uuid,'inventory',true,'{"allow_negative_stock":false}');
+select public.set_business_module_state(current_setting('test.report_org')::uuid,'sales',true,'{}');
+select public.set_business_module_state(current_setting('test.report_org')::uuid,'pos',true,'{}');
+select set_config('test.report_location',(select id::text from public.inventory_locations where organization_id=current_setting('test.report_org')::uuid and branch_id=current_setting('test.report_branch')::uuid),true);
+select set_config('test.report_product',public.save_catalog_product(current_setting('test.report_org')::uuid,null,null,'product','Transformation Hammer','',null,null,'piece',250,150,'exclusive',12,'active',false,'[{"name":"Default","sku":"HAMMER-45","attributes":{},"status":"active"}]','[]')::text,true);
+select set_config('test.report_variant',(select id::text from public.product_variants where product_id=current_setting('test.report_product')::uuid),true);
+select set_config('test.report_item',public.configure_inventory_item(current_setting('test.report_org')::uuid,null,current_setting('test.report_variant')::uuid,2,5,true)::text,true);
+select public.record_stock_movement(current_setting('test.report_org')::uuid,current_setting('test.report_item')::uuid,current_setting('test.report_location')::uuid,'opening_balance',10,150,'Opening stock','report-opening-1');
+select set_config('test.report_customer',public.save_sales_customer(current_setting('test.report_org')::uuid,null,'Report Customer','09171234567','report-customer@example.test')::text,true);
+select public.save_pos_transaction(current_setting('test.report_org')::uuid,null,current_setting('test.report_branch')::uuid,current_setting('test.report_location')::uuid,current_setting('test.report_customer')::uuid,'completed','99900000-0000-4000-8000-000000000301',now(),('[{"productVariantId":"'||current_setting('test.report_variant')||'","quantity":2,"discountAmount":0}]')::jsonb,'[{"method":"cash","amount":600,"reference":""}]');
+select is((public.get_business_trial_value_report(current_setting('test.report_org')::uuid)->>'transactionsRecorded'),'1','Report counts qualifying transactions from source records');
+select is((public.get_business_trial_value_report(current_setting('test.report_org')::uuid)->>'salesRecorded')::numeric,560::numeric,'Report calculates recorded sales without invented savings');
+select is((public.get_business_trial_value_report(current_setting('test.report_org')::uuid)#>>'{customersAdded}'),'1','Report counts customers created during the period');
+select is((public.get_business_trial_value_report(current_setting('test.report_org')::uuid)#>>'{inventoryManaged,stockMovements}'),'2','Inventory activity includes ledger-backed opening and sale movements');
+select is((public.get_business_trial_value_report(current_setting('test.report_org')::uuid)#>>'{mostPopularProducts,0,productName}'),'Transformation Hammer','Popular products come from sales lines');
+select is((public.get_business_trial_value_report(current_setting('test.report_org')::uuid)#>>'{mostPopularProducts,0,unitsSold}')::numeric,2::numeric,'Popular-product quantity is net recorded quantity');
+select is(jsonb_array_length(public.get_business_trial_value_report(current_setting('test.report_org')::uuid)->'slowMovingProducts'),0,'Sold stock is not mislabeled slow moving');
+select ok((public.get_business_trial_value_report(current_setting('test.report_org')::uuid)->'systemFeaturesUsed')@>'[{"name":"Sales / POS"}]','Feature use requires transaction evidence');
+select is(jsonb_array_length(public.get_business_trial_value_report(current_setting('test.report_org')::uuid)->'aiRecommendations'),0,'No AI recommendations are invented');
+select ok(jsonb_array_length(public.get_business_trial_value_report(current_setting('test.report_org')::uuid)->'potentialAreasForImprovement')>0,'Improvement areas are returned from observed gaps');
+select ok(position('refunds'in(public.get_business_trial_value_report(current_setting('test.report_org')::uuid)#>>'{methodology,sales}'))>0,'Report discloses its sales formula');
+select is((public.get_business_trial_value_report(current_setting('test.report_org')::uuid)#>>'{businessSetupCompleted,businessOs}'),'Retail & Hardware OS','Setup section uses the installed template record');
+select set_config('request.jwt.claim.sub','99900000-0000-4000-8000-000000000032',true);select set_config('request.jwt.claims','{"sub":"99900000-0000-4000-8000-000000000032","role":"authenticated"}',true);
+select throws_ok($$select public.get_business_trial_value_report(current_setting('test.report_org')::uuid)$$,'42501','Permission denied.','A non-member cannot read another tenant report');
+select *from finish();rollback;

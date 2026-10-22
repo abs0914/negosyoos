@@ -1,0 +1,11 @@
+export type InvoiceStatus = "draft" | "issued" | "partially_paid" | "paid" | "overdue" | "cancelled";
+export interface InvoiceLine { id: string; description: string; productVariantId: string | null; sku: string | null; unit: string; quantity: number; unitPrice: number; discountAmount: number; taxRate: number; subtotal: number; taxAmount: number; total: number; position: number }
+export interface Invoice { id: string; businessId: string; branchId: string; invoiceNumber: string; customerId: string; customerName: string; customerMobile: string | null; status: InvoiceStatus; invoiceDate: string; dueDate: string; creditTermsDays: number; sourceType: "manual" | "sale" | "quotation" | "sales_order"; sourceId: string | null; notes: string | null; subtotal: number; discountTotal: number; taxTotal: number; total: number; amountPaid: number; balanceDue: number; createdBy: string; issuedAt: string | null; createdAt: string; updatedAt: string; lines: readonly InvoiceLine[] }
+export interface ArPayment { id: string; paymentNumber: string; customerId: string; paymentDate: string; paymentMethod: string; reference: string | null; amount: number; unappliedAmount: number; createdAt: string }
+export interface PaymentAllocation { id: string; paymentId: string; invoiceId: string; amount: number; allocatedAt: string }
+export interface InvoiceAuditRecord { id: string; event: string; actorId: string; details: Readonly<Record<string, unknown>>; createdAt: string }
+export interface InvoiceDetails { invoice: Invoice; payments: readonly ArPayment[]; allocations: readonly PaymentAllocation[]; audit: readonly InvoiceAuditRecord[] }
+export interface AgingBuckets { current: number; "1-30": number; "31-60": number; "61-90": number; "90+": number }
+export interface ReceivablesDashboard { totalReceivables: number; overdueAmount: number; aging: AgingBuckets; topDebtors: readonly { customerId: string; customerName: string; amount: number }[] }
+export interface InvoiceCatalogItem { productVariantId: string; description: string; sku: string; unit: string; price: number; taxRate: number }
+export interface InvoiceableSale { id: string; receiptNumber: string; customerId: string; customerName: string; total: number; createdAt: string }

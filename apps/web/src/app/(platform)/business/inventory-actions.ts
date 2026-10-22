@@ -1,0 +1,12 @@
+"use server";
+import{revalidatePath}from"next/cache";import{AppError}from"@negosyo-os/core/errors";import{completeStockTransfer,configureInventoryItem,createStockAdjustment,postStockAdjustment,recordStockMovement,saveInventoryLocation}from"@negosyo-os/inventory/server";
+export interface InventoryActionState{status?:"success"|"error";message?:string}
+function message(error:unknown){return error instanceof AppError&&error.expose?error.message:error instanceof Error?error.message:"Inventory operation failed.";}
+function json(formData:FormData){return JSON.parse(String(formData.get("payload")??"{}")) as unknown;}
+async function run(businessId:string,operation:()=>Promise<unknown>,success:string):Promise<InventoryActionState>{try{await operation();revalidatePath(`/business/${businessId}/inventory`);return{status:"success",message:success};}catch(error){return{status:"error",message:message(error)};}}
+export async function configureInventoryItemAction(businessId:string,_state:InventoryActionState,formData:FormData){return run(businessId,()=>configureInventoryItem(businessId,json(formData) as Parameters<typeof configureInventoryItem>[1]),"Inventory item configured.");}
+export async function saveInventoryLocationAction(businessId:string,_state:InventoryActionState,formData:FormData){return run(businessId,()=>saveInventoryLocation(businessId,json(formData) as Parameters<typeof saveInventoryLocation>[1]),"Location saved.");}
+export async function recordStockMovementAction(businessId:string,_state:InventoryActionState,formData:FormData){return run(businessId,()=>recordStockMovement(businessId,json(formData) as Parameters<typeof recordStockMovement>[1]),"Stock movement posted.");}
+export async function completeStockTransferAction(businessId:string,_state:InventoryActionState,formData:FormData){return run(businessId,()=>completeStockTransfer(businessId,json(formData) as Parameters<typeof completeStockTransfer>[1]),"Transfer completed atomically.");}
+export async function createStockAdjustmentAction(businessId:string,_state:InventoryActionState,formData:FormData){return run(businessId,()=>createStockAdjustment(businessId,json(formData) as Parameters<typeof createStockAdjustment>[1]),"Adjustment created.");}
+export async function postStockAdjustmentAction(businessId:string,_state:InventoryActionState,formData:FormData){return run(businessId,()=>postStockAdjustment(businessId,String(formData.get("adjustmentId"))),"Adjustment posted.");}

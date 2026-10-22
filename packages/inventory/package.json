@@ -1,0 +1,4 @@
+{
+  "name":"@negosyo-os/inventory","version":"0.1.0","private":true,"type":"module","exports":{".":"./src/index.ts","./server":"./src/server.ts"},
+  "dependencies":{"@negosyo-os/auth":"*","@negosyo-os/business":"*","@negosyo-os/catalog":"*","@negosyo-os/core":"*","@negosyo-os/database":"*","server-only":"0.0.1","zod":"4.4.3"}
+}

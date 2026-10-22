@@ -1,0 +1,19 @@
+{
+  "name": "@negosyo-os/business",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./src/server.ts",
+    "./tenant-context": "./src/tenant-context.ts"
+  },
+  "dependencies": {
+    "@negosyo-os/auth": "*",
+    "@negosyo-os/core": "*",
+    "@negosyo-os/database": "*",
+    "next": "16.3.2",
+    "server-only": "0.0.1",
+    "zod": "4.4.3"
+  }
+}

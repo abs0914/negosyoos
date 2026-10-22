@@ -1,0 +1,6 @@
+"use client";
+
+import { useActionState } from "react";
+import { reviewBusinessInterviewAction, type AiInterviewActionState } from "./ai-interview-actions";
+const initial:AiInterviewActionState={};
+export function AiInterviewReview({businessId,interviewId}:{businessId:string;interviewId:string}){const[state,action,pending]=useActionState(reviewBusinessInterviewAction.bind(null,businessId,interviewId),initial);return <form action={action} className="rounded-2xl border border-primary/30 bg-primary/5 p-5"><h2 className="font-semibold">Human approval</h2><p className="mt-1 text-sm text-muted-foreground">Approval records that these recommendations look right. It does not install a Business OS, enable modules, or apply configuration.</p><div className="mt-4 grid gap-2 sm:grid-cols-2"><button className="min-h-11 rounded-lg bg-primary font-semibold text-primary-foreground" disabled={pending} name="decision" value="approved">Approve recommendations</button><button className="min-h-11 rounded-lg border bg-card font-semibold" disabled={pending} name="decision" value="rejected">Not right for us</button></div>{state.message?<p className={state.status==="error"?"mt-3 text-sm text-destructive":"mt-3 text-sm text-primary"}>{state.message}</p>:null}</form>}

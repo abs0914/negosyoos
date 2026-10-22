@@ -1,0 +1,9 @@
+import { z } from "zod";
+const id = z.uuid(); const amount = z.coerce.number().finite().min(0).max(999_999_999.9999);
+export const InvoiceIdSchema = id;
+export const InvoiceLineInputSchema = z.strictObject({ description: z.string().trim().min(1).max(500), productVariantId: z.union([z.literal(""), id]).default(""), sku: z.string().trim().max(120).default(""), unit: z.string().trim().min(1).max(40), quantity: z.coerce.number().finite().positive(), unitPrice: amount, discountAmount: amount, taxRate: z.coerce.number().finite().min(0).max(100) });
+export const SaveInvoiceSchema = z.strictObject({ invoiceId: id.optional(), branchId: id, customerId: id, invoiceDate: z.iso.date(), dueDate: z.iso.date(), notes: z.string().trim().max(4000).default(""), lines: z.array(InvoiceLineInputSchema).min(1).max(500), issue: z.boolean().default(false) }).refine((value) => value.dueDate >= value.invoiceDate, { path: ["dueDate"], message: "Due date cannot be before the invoice date." });
+export const CreateInvoiceFromSaleSchema = z.strictObject({ saleId: id, dueDate: z.iso.date(), issue: z.boolean().default(true) });
+export const RecordPaymentSchema = z.strictObject({ branchId: id, customerId: id, paymentDate: z.iso.date(), paymentMethod: z.enum(["cash", "bank_transfer", "card", "digital_wallet", "cheque", "other"]), reference: z.string().trim().max(160).default(""), amount: z.coerce.number().finite().positive(), allocations: z.array(z.strictObject({ invoiceId: id, amount: z.coerce.number().finite().positive() })).max(100), idempotencyKey: z.string().trim().min(8).max(200) });
+export const CancelInvoiceSchema = z.strictObject({ invoiceId: id, reason: z.string().trim().min(1).max(500) });
+export type SaveInvoiceInput = z.input<typeof SaveInvoiceSchema>; export type RecordPaymentInput = z.input<typeof RecordPaymentSchema>;

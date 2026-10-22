@@ -1,0 +1,6 @@
+"use server";
+import{revalidatePath}from"next/cache";import{redirect}from"next/navigation";import{sendBusinessAdvisorMessage,startBusinessAdvisorConversation}from"@negosyo-os/ai/server";import{AppError}from"@negosyo-os/core/errors";
+export interface AdvisorActionState{status?:"success"|"error";message?:string}
+const safe=(error:unknown)=>error instanceof AppError&&error.expose?error.message:error instanceof Error?error.message:"The advisor could not answer that question.";
+export async function startAdvisorConversationAction(businessId:string,formData:FormData):Promise<never>{const branch=String(formData.get("branchId")??"");const id=await startBusinessAdvisorConversation(businessId,branch||undefined);redirect(`/business/${businessId}/advisor/${id}`);}
+export async function sendAdvisorMessageAction(businessId:string,conversationId:string,_state:AdvisorActionState,formData:FormData):Promise<AdvisorActionState>{try{await sendBusinessAdvisorMessage(businessId,conversationId,String(formData.get("question")??""));revalidatePath(`/business/${businessId}/advisor/${conversationId}`);revalidatePath(`/business/${businessId}/advisor`);return{status:"success"};}catch(error){return{status:"error",message:safe(error)};}}

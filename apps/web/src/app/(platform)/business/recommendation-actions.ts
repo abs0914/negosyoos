@@ -1,0 +1,4 @@
+"use server";
+import{revalidatePath}from"next/cache";import{refreshBusinessRecommendations,transitionBusinessRecommendation}from"@negosyo-os/ai/server";import{RecommendationStatusSchema}from"@negosyo-os/ai";
+export async function refreshRecommendationsAction(businessId:string,formData:FormData){const branchId=String(formData.get("branchId")??"").trim();await refreshBusinessRecommendations(businessId,branchId||undefined);revalidatePath(`/business/${businessId}/recommendations`);}
+export async function transitionRecommendationAction(businessId:string,recommendationId:string,nextStatus:string,formData:FormData){void formData;await transitionBusinessRecommendation(businessId,recommendationId,RecommendationStatusSchema.parse(nextStatus));revalidatePath(`/business/${businessId}/recommendations`);}

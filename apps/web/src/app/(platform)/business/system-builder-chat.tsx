@@ -1,0 +1,6 @@
+"use client";
+
+import { useActionState, useEffect, useRef } from "react";
+import { sendSystemBuilderMessageAction, type SystemBuilderActionState } from "./system-builder-actions";
+const initial:SystemBuilderActionState={};
+export function SystemBuilderChat({businessId,sessionId}:{businessId:string;sessionId:string}){const[state,action,pending]=useActionState(sendSystemBuilderMessageAction.bind(null,businessId,sessionId),initial),form=useRef<HTMLFormElement>(null);useEffect(()=>{if(state.status==="success")form.current?.reset();},[state]);return <form action={action} className="border-t bg-card p-4" ref={form}><label className="sr-only" htmlFor="system-builder-instruction">Describe a system change</label><textarea className="min-h-24 w-full resize-none rounded-xl border bg-background p-3" id="system-builder-instruction" maxLength={2000} name="instruction" placeholder="Describe what you want to change…" required/><div className="mt-3 flex items-center justify-between gap-3"><p className={state.status==="error"?"text-xs text-destructive":"text-xs text-muted-foreground"}>{state.message??"Nothing changes until you approve the validated preview."}</p><button className="min-h-11 rounded-lg bg-primary px-5 font-semibold text-primary-foreground disabled:opacity-50" disabled={pending}>{pending?"Designing…":"Generate preview"}</button></div></form>}

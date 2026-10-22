@@ -1,0 +1,6 @@
+import{z}from"zod";const id=z.uuid(),time=z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/,"Use a valid 24-hour time.");
+export const AppointmentIdSchema=id;
+export const SaveAppointmentSchema=z.strictObject({appointmentId:id.optional(),branchId:id,customerId:id,serviceId:id,staffId:id,date:z.iso.date(),startTime:time,endTime:time,status:z.enum(["scheduled","confirmed"]).default("scheduled"),notes:z.string().trim().max(2000).default("")}).refine(value=>value.endTime>value.startTime,{path:["endTime"],message:"End time must be after start time."});
+export const ChangeAppointmentStatusSchema=z.strictObject({appointmentId:id,status:z.enum(["confirmed","arrived","in_progress","completed","cancelled","no_show"]),notes:z.string().trim().max(2000).default("")});
+export const AppointmentQuerySchema=z.strictObject({startDate:z.iso.date(),endDate:z.iso.date(),branchId:id.optional(),staffId:id.optional(),customerId:id.optional()}).refine(value=>value.endDate>=value.startDate,{message:"End date cannot be before start date."});
+export type SaveAppointmentInput=z.input<typeof SaveAppointmentSchema>;export type ChangeAppointmentStatusInput=z.input<typeof ChangeAppointmentStatusSchema>;export type AppointmentQueryInput=z.input<typeof AppointmentQuerySchema>;

@@ -1,0 +1,4 @@
+import{describe,expect,it}from"vitest";
+import{AuditEventSchema,AuditFiltersSchema,AuditSourceSchema}from"./index";
+
+describe("audit contracts",()=>{it("accepts every supported source",()=>{expect(["user","ai","workflow","system","api"].map(value=>AuditSourceSchema.parse(value))).toHaveLength(5)});it("constrains viewer filters",()=>{expect(AuditFiltersSchema.parse({page:2,pageSize:50,search:"status changed"})).toMatchObject({page:2,pageSize:50});expect(()=>AuditFiltersSchema.parse({search:"x),organization_id.neq.secret"})).toThrow()});it("requires sanitized snapshot objects",()=>{expect(()=>AuditEventSchema.parse({id:crypto.randomUUID(),businessId:crypto.randomUUID(),branchId:null,branchName:null,userId:null,userName:null,action:"created",entity:"test",entityId:null,before:"raw",after:null,timestamp:new Date().toISOString(),ipMetadata:{ipAddress:null,userAgent:null,requestId:null},source:"system"})).toThrow()})});

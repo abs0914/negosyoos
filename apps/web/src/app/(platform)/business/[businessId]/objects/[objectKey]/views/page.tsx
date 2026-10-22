@@ -1,0 +1,12 @@
+import Link from "next/link";
+
+import { getObjectByKey } from "@negosyo-os/objects/server";
+import { listViewsForObject } from "@negosyo-os/views/server";
+
+export default async function ObjectViewsPage({ params }: { params: Promise<{ businessId: string; objectKey: string }> }) {
+  const { businessId, objectKey } = await params;
+  const object = await getObjectByKey(businessId, objectKey);
+  const views = await listViewsForObject(businessId, object.definition.id);
+  const basePath = `/business/${businessId}/objects/${objectKey}`;
+  return <main className="mx-auto w-full max-w-5xl px-6 py-12"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-sm font-semibold text-primary">Views</p><h1 className="mt-2 text-3xl font-semibold">{object.definition.pluralLabel} views</h1><p className="mt-2 text-muted-foreground">One metadata definition can render as a table, cards, or a grouped kanban board.</p></div><div className="flex gap-3"><Link className="rounded-lg border px-4 py-2 text-sm font-semibold" href={basePath}>Back to records</Link><Link className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" href={`${basePath}/views/new`}>New view</Link></div></div><div className="mt-8 grid gap-4 sm:grid-cols-2">{views.map((view) => <article className="rounded-2xl border bg-card p-5" key={view.id}><div className="flex items-start justify-between gap-3"><div><h2 className="font-semibold">{view.name}</h2><p className="mt-1 text-sm text-muted-foreground">{view.description || `${view.selectedColumns.length} columns · ${view.pagination.pageSize} per page`}</p></div><span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold capitalize">{view.type}</span></div><p className="mt-4 text-xs text-muted-foreground">{view.scope === "personal" ? "Personal view" : "Shared view"}</p><div className="mt-4 flex gap-3"><Link className="text-sm font-medium text-primary hover:underline" href={`${basePath}?view=${view.key}`}>Open</Link><Link className="text-sm font-medium text-primary hover:underline" href={`${basePath}/views/${view.key}`}>Configure</Link></div></article>)}{views.length === 0 ? <div className="rounded-2xl border bg-card p-8 text-center sm:col-span-2"><p className="text-sm text-muted-foreground">No saved views yet. The records page is using its metadata-generated default table.</p></div> : null}</div></main>;
+}
