@@ -40,15 +40,19 @@
     "@negosyo-os/ui": "*",
     "@negosyo-os/views": "*",
     "@negosyo-os/workflow": "*",
+    "@react-three/drei": "^10.7.9",
+    "@react-three/fiber": "^9.8.2",
     "@serwist/next": "9.5.12",
     "@tanstack/react-query": "5.102.3",
     "next": "16.3.2",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "three": "^0.187.0",
     "zod": "4.4.3"
   },
   "devDependencies": {
     "@serwist/cli": "9.5.12",
+    "@types/three": "^0.187.0",
     "esbuild": "0.28.2",
     "serwist": "9.5.12"
   }

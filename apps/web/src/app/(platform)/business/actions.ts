@@ -1,4 +1,6 @@
 "use server";
+import { worldEnabled } from "@/features/business-world/flag";
+import { createClient as createWorldPreferenceClient } from "@negosyo-os/auth/server";
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -104,6 +106,11 @@ export async function createBusinessAction(
 export async function switchBusinessAction(formData: FormData): Promise<never> {
   const businessId = BusinessIdSchema.parse(formData.get("businessId"));
   await selectTenant(businessId);
+  if (worldEnabled(businessId)) {
+    const client = await createWorldPreferenceClient();
+    const { data } = await client.from("business_world_preferences").select("landing_view").eq("organization_id", businessId).maybeSingle();
+    if (data?.landing_view === "world") redirect(`/business/${businessId}/world`);
+  }
   redirect(`/business/${businessId}`);
 }
 

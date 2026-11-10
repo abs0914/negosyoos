@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "./design.css";
+@source "../../../../packages/ui/src";
 
 :root {
   --background: oklch(0.982 0.012 92);
@@ -25,8 +27,14 @@
   --destructive: #c81425;
   --border: oklch(0.875 0.025 101);
   --ring: #2869ba;
-  --radius: 0.875rem;
-  --shadow-card: 0 1px 2px rgb(4 63 141 / 0.05), 0 12px 32px -22px rgb(4 63 141 / 0.3);
+  --radius: 0.625rem;
+  --shadow-card: 0 2px 3px rgb(4 63 141 / 0.04);
+  --ink: var(--primary);
+  --ink-deep: var(--accent-foreground);
+  --paper: var(--background);
+  --citrus: var(--accent);
+  --font-display: Georgia, "Times New Roman", serif;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @theme inline {
@@ -44,12 +52,10 @@ body { background: var(--background); color: var(--foreground); }
 button, a, input, select, textarea { outline-color: var(--ring); }
 button, [role="button"], a { -webkit-tap-highlight-color: transparent; }
 ::selection { background: var(--primary-soft); color: var(--foreground); }
-.hero-enter { animation: hero-enter .72s cubic-bezier(.22,1,.36,1) both; }
+.hero-enter { animation: hero-enter .6s var(--ease-out) both; }
 .hero-enter-delay-1 { animation-delay: .08s; }
 .hero-enter-delay-2 { animation-delay: .16s; }
 .hero-enter-delay-3 { animation-delay: .24s; }
-.hero-float { animation: hero-float 6s ease-in-out infinite; }
 .pb-safe { padding-bottom: max(.75rem, env(safe-area-inset-bottom)); }
-@keyframes hero-enter { from { opacity: 0; transform: translateY(18px); filter: blur(7px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
-@keyframes hero-float { 0%, 100% { transform: translateY(0) rotate(1.2deg); } 50% { transform: translateY(-8px) rotate(.4deg); } }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
+@keyframes hero-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation-delay: 0s !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }

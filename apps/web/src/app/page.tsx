@@ -1,24 +1,107 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Brand, Icon } from "@negosyo-os/ui";
+import { Icon } from "@negosyo-os/ui";
+
 import { LandingProductPreview } from "./landing-product-preview";
-import { MarketingFooter } from "./marketing-footer";
+import { MarketingPageShell } from "./marketing-page-shell";
+import "./homepage.css";
 
-export const metadata: Metadata = { title: "Know what your business needs next", description: "Take a free five-minute business health assessment and turn the results into a practical operating system for your Philippine SME." };
-const modules = [["Sell and get paid","POS, sales, quotations, invoices, and receivables","sales"],["Know your stock","Catalog, inventory, purchasing, and deliveries","inventory"],["Build relationships","Customers, appointments, loyalty, and follow-ups","customers"],["Run the team","Employees, attendance, roles, approvals, and workflows","team"]] as const;
+export const metadata: Metadata = {
+  title: "Know what your business needs next",
+  description: "Get a free business health report, find your priorities, and build a practical workspace for your Philippine small business.",
+};
 
-function LinkButton({ children, href, outline = false }: { readonly children: React.ReactNode; readonly href: string; readonly outline?: boolean }) { return <Link className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-xl px-6 text-sm font-bold transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${outline ? "border bg-card text-foreground shadow-sm hover:bg-primary-soft" : "bg-primary text-primary-foreground shadow-lg hover:bg-primary-hover"}`} href={href}>{children}</Link>; }
+const businessTools = [
+  { title: "Sell and get paid", description: "Follow a sale from the counter to the invoice.", detail: "POS · Sales · Quotations · Invoices", icon: "peso" },
+  { title: "Keep stock moving", description: "See what’s available and what needs replenishing.", detail: "Catalog · Inventory · Purchasing · Deliveries", icon: "inventory" },
+  { title: "Know your customers", description: "Keep customer details and follow-ups together.", detail: "Customers · Appointments · Loyalty", icon: "customers" },
+  { title: "Bring the team together", description: "Give daily work a clear owner and next step.", detail: "Employees · Attendance · Approvals", icon: "team" },
+] as const;
+
+function SampleReport() {
+  return (
+    <figure className="assessment-example hero-enter hero-enter-delay-2">
+      <div className="report-cover">
+        <span className="report-brand"><Icon name="business" size={18} /> negosyoOS / Business health</span>
+        <span className="example-tag">Illustrative report</span>
+      </div>
+      <div className="report-page">
+        <div className="report-title"><div><p className="design-label">Retail & hardware</p><h2>Sampaguita Home Supply</h2></div><span className="report-edition" aria-hidden="true">01</span></div>
+        <div className="report-summary">
+          <div className="health-score" aria-label="Example overall health score, 62 out of 100"><strong>62<span>/100</span></strong><span>Business health</span></div>
+          <div className="report-insight"><span className="design-label">A clearer place to start</span><p>Your sales routine is in place. Stock tracking needs attention.</p></div>
+        </div>
+        <dl className="report-scores">
+          {[["Sales health", 80], ["Cash flow", 65], ["Inventory", 40]].map(([label, value]) => (
+            <div key={label}><dt>{label}</dt><dd><span className="score-track" aria-hidden="true"><span style={{ transform: `scaleX(${Number(value) / 100})` }} /></span><b>{value}<span className="sr-only"> out of 100</span></b></dd></div>
+          ))}
+        </dl>
+        <div className="report-priority"><span className="priority-number">1</span><div><p className="design-label">First priority</p><h3>Make stock levels visible.</h3><p>Start with a count of your fastest-selling items.</p></div><Icon name="inventory" size={23} /></div>
+        <p className="report-footnote">Example scores and guidance. Your report is based on your answers.</p>
+      </div>
+      <figcaption><Icon name="file" size={16} /><span>A health score. Your strengths. Your next priorities.</span></figcaption>
+    </figure>
+  );
+}
 
 export default function HomePage() {
-  return <main className="overflow-hidden bg-background">
-    <header className="sticky top-0 z-50 border-b border-border/70 bg-background/88 backdrop-blur-xl"><div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 lg:px-8"><Link aria-label="negosyoOS home" href="/"><Brand /></Link><nav aria-label="Main navigation" className="hidden items-center gap-7 lg:flex"><a className="text-sm font-semibold text-muted-foreground hover:text-foreground" href="#how-it-works">How it works</a><a className="text-sm font-semibold text-muted-foreground hover:text-foreground" href="#manage">What you can manage</a><a className="text-sm font-semibold text-muted-foreground hover:text-foreground" href="#industries">For your business</a></nav><div className="flex items-center gap-2"><Link className="hidden min-h-10 items-center rounded-lg px-3 text-sm font-bold hover:bg-muted sm:inline-flex" href="/login">Sign in</Link><Link className="inline-flex min-h-10 items-center rounded-lg bg-primary px-3.5 text-xs font-bold text-primary-foreground hover:bg-primary-hover sm:px-4 sm:text-sm" href="/assessment">Free assessment</Link></div></div></header>
-    <section className="relative pt-16 sm:pt-20 lg:pt-24"><div className="absolute inset-x-0 top-0 h-[58rem] bg-[radial-gradient(75%_58%_at_50%_8%,color-mix(in_oklab,var(--primary-soft)_80%,white),transparent_74%)]" /><div className="relative mx-auto max-w-5xl px-5 text-center"><div className="hero-enter mx-auto inline-flex items-center gap-2 rounded-full border border-primary/15 bg-card/75 px-3 py-1.5 text-[11px] font-bold text-primary shadow-sm sm:text-xs"><span className="h-1.5 w-1.5 rounded-full bg-accent" />Built for Philippine small businesses</div><h1 className="hero-enter hero-enter-delay-1 mx-auto mt-6 max-w-4xl text-5xl font-bold leading-[.98] tracking-[-0.06em] text-balance sm:text-6xl lg:text-7xl">Know what your business <span className="text-primary">needs next.</span></h1><p className="hero-enter hero-enter-delay-2 mx-auto mt-6 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg sm:leading-8">NegosyoOS turns a five-minute health check into a practical system for sales, inventory, customers, cash flow, and daily operations.</p><div className="hero-enter hero-enter-delay-3 mt-8 flex flex-col justify-center gap-3 sm:flex-row"><LinkButton href="/assessment">Check my business health — free <Icon name="chevron-right" size={16} /></LinkButton><LinkButton href="#product-preview" outline>See negosyoOS in action</LinkButton></div><p className="hero-enter hero-enter-delay-3 mt-4 text-xs font-medium text-muted-foreground">About 5 minutes · No credit card · Your answers stay private</p></div><div id="product-preview"><LandingProductPreview /></div></section>
-    <section className="mx-auto grid max-w-7xl gap-12 px-5 py-20 sm:py-28 lg:grid-cols-[.82fr_1.18fr] lg:px-8"><div><p className="text-xs font-bold uppercase tracking-[.18em] text-primary">Less guesswork. More control.</p><h2 className="mt-4 text-4xl font-bold tracking-[-.045em] text-balance sm:text-5xl">Your business is already doing the work. Your system should keep up.</h2><p className="mt-5 text-base leading-7 text-muted-foreground">Bring the moving parts together and focus on the next practical improvement—without forcing your business into a one-size-fits-all setup.</p></div><div className="space-y-4">{[["Scattered records","Bring notebook entries, spreadsheets, and chat threads into one reliable place."],["Unclear priorities","See which issue will make the biggest difference to the business next."],["Repeat work","Use approvals and workflows to spend less time chasing the same updates."]].map(([title,description],index) => <article className="rounded-2xl border bg-card p-6 shadow-card" key={title}><div className="flex gap-5"><span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-muted text-sm font-black text-primary">0{index + 1}</span><div><h3 className="text-xl font-bold">{title}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p></div></div></article>)}</div></section>
-    <section className="bg-primary px-5 py-20 text-primary-foreground sm:py-28 lg:px-8" id="how-it-works"><div className="mx-auto max-w-7xl"><p className="text-xs font-bold uppercase tracking-[.18em] text-accent">A practical place to begin</p><h2 className="mt-4 max-w-2xl text-4xl font-bold tracking-[-.045em] text-balance sm:text-5xl">From “I’m not sure” to a clearer next step.</h2><div className="mt-12 grid gap-5 md:grid-cols-3">{[["01","Assess","Answer practical questions about sales, cash flow, stock, customers, and daily work."],["02","Choose","Get a focused health report and recommended tools based on your real priorities."],["03","Run and improve","Set up your workspace, handle daily operations, and keep improving with guidance."]].map(([number,title,description]) => <article className="rounded-2xl border border-white/15 bg-white/[.07] p-7" key={number}><span className="text-xs font-black text-accent">{number}</span><h3 className="mt-8 text-2xl font-bold">{title}</h3><p className="mt-3 text-sm leading-6 text-white/72">{description}</p></article>)}</div></div></section>
-    <section className="mx-auto max-w-7xl px-5 py-20 sm:py-28 lg:px-8" id="manage"><p className="text-xs font-bold uppercase tracking-[.18em] text-primary">One flexible business system</p><h2 className="mt-4 max-w-3xl text-4xl font-bold tracking-[-.045em] text-balance sm:text-5xl">Start with what matters now. Add more when you are ready.</h2><div className="mt-12 grid gap-4 sm:grid-cols-2">{modules.map(([title,description,icon]) => <article className="rounded-2xl border bg-card p-7 shadow-card" key={title}><span className="grid h-11 w-11 place-items-center rounded-xl bg-primary-soft text-primary"><Icon name={icon} size={20} /></span><h3 className="mt-6 text-xl font-bold">{title}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p></article>)}</div></section>
-    <section className="border-y bg-card" id="industries"><div className="mx-auto grid max-w-7xl gap-10 px-5 py-20 lg:grid-cols-[.8fr_1.2fr] lg:items-center lg:px-8"><div><p className="text-xs font-bold uppercase tracking-[.18em] text-primary">Made for your kind of negosyo</p><h2 className="mt-4 text-4xl font-bold tracking-[-.045em] text-balance">Practical enough for the way local businesses really work.</h2></div><div className="flex flex-wrap gap-3">{["Retail & hardware","Food & restaurant","Salon & services","Repair & laundry","Professional services","Wholesale & distribution"].map((industry) => <span className="rounded-full border bg-background px-4 py-3 text-sm font-bold" key={industry}>{industry}</span>)}</div></div></section>
-    <section className="mx-auto grid max-w-7xl gap-5 px-5 py-20 md:grid-cols-3 sm:py-28 lg:px-8">{[["shield","Your business stays yours","Each workspace is separated and people only see what they are allowed to access."],["approvals","You approve important changes","Recommendations do not silently change how your business runs."],["coach","Guidance without jargon","Understand priorities in practical owner language and act on the next step."]].map(([icon,title,description]) => <article className="rounded-2xl border bg-card p-6 shadow-card" key={title}><span className="grid h-10 w-10 place-items-center rounded-xl bg-primary-soft text-primary"><Icon name={icon} size={18} /></span><h3 className="mt-5 text-lg font-bold">{title}</h3><p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p></article>)}</section>
-    <section className="px-5 pb-20 sm:pb-28 lg:px-8"><div className="mx-auto max-w-7xl rounded-[2rem] bg-primary px-6 py-14 text-center text-primary-foreground sm:py-20"><p className="text-xs font-bold uppercase tracking-[.18em] text-accent">Your clearer next step starts here</p><h2 className="mx-auto mt-4 max-w-3xl text-4xl font-bold tracking-[-.045em] text-balance sm:text-5xl">Find the parts of your business that need attention most.</h2><p className="mx-auto mt-5 max-w-xl text-sm leading-6 text-white/75">Get a private, practical report in about five minutes. Walang accounting jargon.</p><div className="mt-8"><LinkButton href="/assessment" outline>Take the free assessment <Icon name="chevron-right" size={16} /></LinkButton></div></div></section>
-    <MarketingFooter />
-  </main>;
+  return (
+    <MarketingPageShell home>
+      <main className="home home-v2" id="main-content">
+        <section aria-labelledby="home-title" className="home-hero">
+          <div className="site-width hero-grid">
+            <div className="hero-copy">
+              <p className="design-label hero-enter"><span className="label-dot" /> For Philippine small businesses</p>
+              <h1 className="hero-enter hero-enter-delay-1" id="home-title">Your negosyo.<br />A clearer<br /><em>next step.</em></h1>
+              <p className="hero-intro hero-enter hero-enter-delay-2">Find what needs attention in your business. Start with a free health check, then put the right tools to work.</p>
+              <div className="hero-actions hero-enter hero-enter-delay-3">
+                <Link className="site-button" href="/assessment">Check my business health <Icon name="chevron-right" size={17} /></Link>
+                <a className="site-text-link" href="#how-it-works">What will I get? <span aria-hidden="true">↓</span></a>
+              </div>
+              <p className="hero-note"><Icon name="attendance" size={14} /> About 5 minutes <span aria-hidden="true">·</span> No account or payment needed</p>
+            </div>
+            <SampleReport />
+          </div>
+          <div className="site-width hero-bottom"><span>Built around the way you work.</span><span>Assess <span aria-hidden="true">→</span> Prioritize <span aria-hidden="true">→</span> Take action</span></div>
+        </section>
+
+        <section className="site-width report-explainer" id="how-it-works" aria-labelledby="report-heading">
+          <div className="home-section-heading"><p className="design-label">01 / Understand your business</p><h2 id="report-heading">Five minutes.<br />A useful starting point.</h2></div>
+          <div className="report-explainer-copy"><p className="section-intro">Answer practical questions about how you sell, manage cash, track stock, and organize daily work.</p><ol className="report-deliverables">
+            <li><span>01</span><div><h3>See the whole picture</h3><p>Get an overall health score and a breakdown of your business areas.</p></div></li>
+            <li><span>02</span><div><h3>Find your next priorities</h3><p>Understand your strengths and the three opportunities to focus on first.</p></div></li>
+            <li><span>03</span><div><h3>Build from your results</h3><p>Create an account to carry your assessment into a business workspace and explore recommended tools.</p></div></li>
+          </ol><p className="privacy-note"><Icon name="shield" size={17} /> Your assessment answers stay on this device until you create your workspace.</p></div>
+        </section>
+
+        <section className="workflow-section" id="product-preview" aria-labelledby="workflow-heading">
+          <div className="site-width home-section">
+            <div className="workflow-heading"><div className="home-section-heading"><p className="design-label">02 / Put it into practice</p><h2 id="workflow-heading">From “ubos na?”<br />to a plan to restock.</h2></div><p className="section-intro">Follow a hardware store through one everyday task. Explore how an inventory alert becomes a draft purchase order.</p></div>
+            <LandingProductPreview />
+          </div>
+        </section>
+
+        <section className="site-width home-section" id="manage" aria-labelledby="tools-heading">
+          <div className="tools-heading"><div className="home-section-heading"><p className="design-label">03 / Make it your workspace</p><h2 id="tools-heading">The tools for<br />your kind of work.</h2></div><p className="section-intro">Start with the priorities in your report. Bring more of your operations together as you need them.</p></div>
+          <div className="module-grid">{businessTools.map(({ title, description, detail, icon }, index) => (
+            <article className="module-tile" key={title}><div className="module-top"><Icon name={icon} size={26} /><span className="design-label">0{index + 1}</span></div><h3>{title}</h3><p>{description}</p><p className="module-detail">{detail}</p></article>
+          ))}</div>
+          <div className="business-types"><p className="design-label">Made for local business</p><p>Retail & hardware · Food & restaurants · Salons & services · Repair & laundry · Professional services · Wholesale</p></div>
+        </section>
+
+        <section className="home-questions" aria-labelledby="questions-heading">
+          <div className="site-width question-grid"><div className="home-section-heading"><p className="design-label">Before you begin</p><h2 id="questions-heading">A few things<br />worth knowing.</h2><Link className="site-text-link" href="/contact">Have another question? Get in touch <span aria-hidden="true">↗</span></Link></div>
+            <div className="question-list">
+              <details open><summary>Is the business health check free?</summary><p>Yes. You can answer the questions and see your report without creating an account or making a payment.</p></details>
+              <details><summary>What happens after I get my report?</summary><p>You can review your strengths and priorities, or create an account to bring the report into a business workspace. Workspace tools are available through subscription plans. You review a plan and its price before paying.</p></details>
+              <details><summary>Do I need financial statements?</summary><p>The assessment asks about your everyday business practices. You choose how consistently each practice is in place, from “Not in place” to “Consistently.”</p></details>
+              <details><summary>What does the health score mean?</summary><p>It summarizes the practices you report. Use it to choose improvements and discuss priorities with your team. The score is based on your answers, rather than an audit of your records.</p></details>
+            </div>
+          </div>
+        </section>
+
+        <section className="home-close"><div className="site-width home-close-inner"><div><p className="design-label"><span className="label-dot" /> Your next step starts here</p><h2>A little clarity.<br /><em>A way forward.</em></h2><p>Take five minutes for the business you’re building.</p></div><div className="closing-action"><Link className="site-button site-button-accent" href="/assessment">Start my free health check <Icon name="chevron-right" size={17} /></Link><p>No account or payment needed.</p></div></div></section>
+      </main>
+    </MarketingPageShell>
+  );
 }

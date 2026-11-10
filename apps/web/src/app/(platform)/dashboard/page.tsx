@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element -- Private signed business logos cannot use the static Next Image allowlist. */
 import Link from 'next/link';
 import { getBusinessLogoUrl, getBusinessSettings, listBusinesses } from '@negosyo-os/business/server';
-import { Brand, Button, Card, EmptyState, Icon, PageHeader } from '@negosyo-os/ui';
+import { Brand, Button, Card, EmptyState, Icon } from '@negosyo-os/ui';
 import { hasPlatformAdminAccess } from '@negosyo-os/platform-admin/server';
 import { switchBusinessAction } from '@/app/(platform)/business/actions';
 
@@ -15,9 +15,9 @@ export default async function DashboardPage() {
         }))
     );
     return (
-        <main className="min-h-screen bg-[radial-gradient(70%_45%_at_15%_0%,var(--primary-soft),transparent)]">
-            <header className="border-b bg-card/90 backdrop-blur">
-                <div className="mx-auto flex h-17 max-w-7xl items-center justify-between px-5 lg:px-8">
+        <main className="min-h-screen">
+            <header className="site-header">
+                <div className="site-width site-header-inner">
                     <Link aria-label="negosyoOS home" href="/">
                         <Brand />
                     </Link>
@@ -40,25 +40,23 @@ export default async function DashboardPage() {
                     </div>
                 </div>
             </header>
-            <div className="mx-auto w-full max-w-7xl px-5 py-12 sm:py-16 lg:px-8">
-                <PageHeader
-                    eyebrow="Your businesses"
-                    title="Where are we working today?"
-                    description="Choose a business workspace or create a new one. Each workspace keeps its own team, branches, records, and tools."
-                    actions={
-                        <Link
-                            className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-primary-foreground shadow-sm hover:bg-primary-hover"
-                            href="/business/new"
-                        >
-                            <Icon name="plus" size={16} />
-                            Create business
+            <div className="site-width py-8 sm:py-12">
+                <section aria-labelledby="directory-title" className="directory-intro">
+                    <div>
+                        <p className="design-label"><span className="label-dot" /> Workspace directory</p>
+                        <h1 id="directory-title">Your <em>businesses.</em></h1>
+                        <p>Choose the business you want to work in today. Each workspace keeps its own team, branches, records, and tools.</p>
+                    </div>
+                    <div className="flex">
+                        <Link className="workspace-action" href="/business/new">
+                            <Icon name="plus" size={16} /> Create business
                         </Link>
-                    }
-                />
+                    </div>
+                </section>
                 {businesses.length ? (
                     <section
                         aria-label="Business workspaces"
-                        className="mt-10 grid gap-5 sm:grid-cols-2 xl:grid-cols-3"
+                        className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-3"
                     >
                         {businessesWithBrand.map(({ business, logoUrl, settings }) => (
                             <Card

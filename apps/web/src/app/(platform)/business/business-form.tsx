@@ -23,8 +23,8 @@ export function BusinessForm({ business }: { business?: Business | undefined }) 
   const fields = [
     { name: "legalName", label: "Legal name", value: business?.legalName },
     { name: "tradeName", label: "Trade name", value: business?.tradeName },
-    { name: "industry", label: "Industry key", value: business?.industry, placeholder: "retail" },
-    { name: "phone", label: "Phone", value: business?.phone ?? "", placeholder: "+639171234567" },
+    { name: "industry", label: "Industry", value: business?.industry, placeholder: "retail" },
+    { name: "phone", label: "Phone", value: business?.phone ?? "", placeholder: "+639171234567", type: "tel" },
     { name: "email", label: "Business email", value: business?.email ?? "", type: "email" },
     { name: "addressLine1", label: "Address line 1", value: business?.address.line1 },
     { name: "addressLine2", label: "Address line 2", value: business?.address.line2 ?? "", required: false },
@@ -39,11 +39,20 @@ export function BusinessForm({ business }: { business?: Business | undefined }) 
   return (
     <form action={formAction} className="space-y-6" onSubmit={()=>{if(assessmentRef.current)assessmentRef.current.value=localStorage.getItem("negosyo_business_health_assessment_v1")??"";}}>
       {!business?<input name="healthAssessment" ref={assessmentRef} type="hidden"/>:null}
-      <div className="grid gap-5 sm:grid-cols-2">
-        {fields.map((field) => (
+      <p className="text-sm text-muted-foreground">Fields marked * are required. You can update these details later in Settings.</p>
+      {[
+        {title: 'Business identity', description: 'How customers and your team know the business.', fields: fields.slice(0, 5)},
+        {title: 'Main branch address', description: 'Where this business operates.', fields: fields.slice(5, 11)},
+        {title: 'Registration details', description: 'Optional details for your business records.', fields: fields.slice(11)},
+      ].map(group => <fieldset className="business-fieldset" key={group.title}><legend>{group.title}</legend><p>{group.description}</p><div className="mt-4 grid gap-5 sm:grid-cols-2">
+        {group.fields.map((field) => (
           <div className="space-y-2" key={field.name}>
-            <label className="text-sm font-medium" htmlFor={field.name}>{field.label}</label>
-            <input
+            <label className="text-sm font-medium" htmlFor={field.name}>{field.label}{!("required" in field) || field.required ? <span aria-hidden="true"> *</span> : null}</label>
+            {field.name === 'industry' ? <select className={inputClass} id="industry" name="industry" required defaultValue={business?.industry ?? ''} aria-invalid={Boolean(state.fieldErrors?.industry?.length)} aria-describedby={state.fieldErrors?.industry?.length ? 'industry-error' : undefined}>
+              <option value="" disabled>Select your industry</option>
+              {business?.industry && !['retail','food_restaurant','salon_service','professional_services','repair_services','wholesale_distribution','other'].includes(business.industry) ? <option value={business.industry}>{business.industry.replaceAll('_',' ').replaceAll('-',' ')}</option> : null}
+              <option value="retail">Retail & hardware</option><option value="food_restaurant">Food & restaurants</option><option value="salon_service">Salons & services</option><option value="professional_services">Professional services</option><option value="repair_services">Repair & laundry</option><option value="wholesale_distribution">Wholesale & distribution</option><option value="other">Other</option>
+            </select> : <input
               aria-describedby={state.fieldErrors?.[field.name]?.length ? `${field.name}-error` : undefined}
               aria-invalid={state.fieldErrors?.[field.name]?.length ? true : undefined}
               className={`${inputClass} ${state.fieldErrors?.[field.name]?.length ? "border-destructive focus:ring-destructive" : ""}`}
@@ -53,12 +62,14 @@ export function BusinessForm({ business }: { business?: Business | undefined }) 
               placeholder={"placeholder" in field ? field.placeholder : undefined}
               required={"required" in field ? field.required : true}
               type={"type" in field ? field.type : "text"}
-            />
+            />}
             {state.fieldErrors?.[field.name]?.length ? (
               <p className="text-sm text-destructive" id={`${field.name}-error`}>{state.fieldErrors[field.name]?.join(" ")}</p>
             ) : null}
           </div>
         ))}
+      </div></fieldset>)}
+      <div className="grid gap-5 sm:grid-cols-2">
         <div className="space-y-2">
           <label className="text-sm font-medium" htmlFor="businessType">Business type</label>
           <select

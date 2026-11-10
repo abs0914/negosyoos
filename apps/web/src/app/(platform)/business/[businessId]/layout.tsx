@@ -1,3 +1,4 @@
+import { worldEnabled } from "@/features/business-world/flag";
 import { can, requireAuthenticatedUser } from "@negosyo-os/auth";
 import { getBusiness, getBusinessLogoUrl, getBusinessSettings, getBusinessTrialDashboard } from "@negosyo-os/business/server";
 import { requireTenantContext } from "@negosyo-os/business/tenant-context";
@@ -48,6 +49,7 @@ export default async function BusinessLayout({
   const base = `/business/${business.id}`;
   const primaryItems: BusinessShellNavItem[] = [
     { href: base, icon: "home", label: "Home" },
+    ...(worldEnabled(businessId) ? [{ href: `${base}/world`, icon: "business", label: "World", badge: "Pilot" }] : []),
     ...(coach ? [{ href: `${base}/coach`, icon: "coach", label: "Negosyo Coach", badge: `${coach.completedCount}/${coach.totalCount}` }] : []),
     ...(showNotifications ? [{
       ...(unreadNotifications ? { badge: unreadNotifications > 99 ? "99+" : String(unreadNotifications) } : {}),
@@ -60,7 +62,7 @@ export default async function BusinessLayout({
   const groups: BusinessShellNavGroup[] = [
     {
       label: "Daily operations",
-      items: moduleNavigation.map((item) => ({ href: item.href, icon: item.icon, label: item.label })),
+      items: moduleNavigation.map((item) => ({ href: item.href, icon: item.key, label: item.label === "CRM" ? "Customers" : item.label })),
     },
     {
       label: "Insights & guidance",
@@ -84,7 +86,7 @@ export default async function BusinessLayout({
       label: "Administration",
       items: [
         ...(showTemplates ? [{ href: `${base}/templates`, icon: "business", label: "Business OS" }] : []),
-        ...(showModules ? [{ href: `${base}/modules`, icon: "modules", label: "Modules" }] : []),
+        ...(showModules ? [{ href: `${base}/modules`, icon: "modules", label: "Business tools" }] : []),
         ...(showMetadata || manageMetadata || showRecords || createRecords || updateRecords ? [{ href: `${base}/objects`, icon: "objects", label: "Objects & fields" }] : []),
         { href: `${base}/branches`, icon: "branches", label: "Branches" },
         ...(showRoleManagement ? [{ href: `${base}/roles`, icon: "team", label: "Team & roles" }] : []),

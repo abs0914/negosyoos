@@ -1,0 +1,40 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+select plan(15);
+insert into auth.users(instance_id,id,aud,role,email,encrypted_password,email_confirmed_at,created_at,updated_at) values
+('00000000-0000-0000-0000-000000000000','91000000-0000-0000-0000-000000000001','authenticated','authenticated','world-owner@example.test','',now(),now(),now()),
+('00000000-0000-0000-0000-000000000000','92000000-0000-0000-0000-000000000002','authenticated','authenticated','world-stranger@example.test','',now(),now(),now()),
+('00000000-0000-0000-0000-000000000000','93000000-0000-0000-0000-000000000003','authenticated','authenticated','world-staff@example.test','',now(),now(),now());
+set local role authenticated;
+select set_config('request.jwt.claim.sub','91000000-0000-0000-0000-000000000001',true);
+select set_config('request.jwt.claims','{"sub":"91000000-0000-0000-0000-000000000001","role":"authenticated"}',true);
+select public.create_business('world-test','World Legal','World Test','sole_proprietorship','retail','{"line1":"1 Main St","city":"Manila","province":"Metro Manila"}'::jsonb);
+reset role;
+select set_config('test.world_org',(select id::text from public.organizations where slug='world-test'),true);
+insert into public.organization_memberships(organization_id,user_id,status,joined_at) values(current_setting('test.world_org')::uuid,'93000000-0000-0000-0000-000000000003','active',now());
+insert into public.membership_roles(membership_id,role_id) select m.id,r.id from public.organization_memberships m join public.roles r on r.organization_id=m.organization_id and r.key='viewer' where m.organization_id=current_setting('test.world_org')::uuid and m.user_id='93000000-0000-0000-0000-000000000003';
+set local role authenticated;
+select lives_ok($$insert into public.business_world_configs(organization_id,config,suggestion_key) values(current_setting('test.world_org')::uuid,'{"version":1}','initial')$$,'owner can save shared layout');
+select lives_ok($$insert into public.business_world_preferences(organization_id,user_id,landing_view) values(current_setting('test.world_org')::uuid,auth.uid(),'world')$$,'owner can save own preference');
+select is(private.world_topic_allowed('world:'||current_setting('test.world_org')||':config'),true,'member can receive configuration invalidation');
+select is(private.world_topic_allowed('world:'||current_setting('test.world_org')||':sales'),false,'disabled domain does not authorize subscription');
+select is(private.world_topic_allowed('world:not-a-uuid:sales'),false,'malformed channel denied');
+select throws_ok($$update public.business_world_configs set schema_version=2 where organization_id=current_setting('test.world_org')::uuid$$,'23514',null,'future schema cannot be written by old application');
+select set_config('request.jwt.claim.sub','92000000-0000-0000-0000-000000000002',true);
+select set_config('request.jwt.claims','{"sub":"92000000-0000-0000-0000-000000000002","role":"authenticated"}',true);
+select is((select count(*) from public.business_world_configs where organization_id=current_setting('test.world_org')::uuid),0::bigint,'outsider cannot read another tenant layout');
+select is((select count(*) from public.business_world_preferences where organization_id=current_setting('test.world_org')::uuid),0::bigint,'outsider cannot read preferences');
+select is(private.world_topic_allowed('world:'||current_setting('test.world_org')||':config'),false,'outsider channel denied');
+select throws_ok($$insert into public.business_world_configs(organization_id,config,suggestion_key) values(current_setting('test.world_org')::uuid,'{}','outsider')$$,'42501',null,'outsider cannot write tenant layout');
+select set_config('request.jwt.claim.sub','93000000-0000-0000-0000-000000000003',true);
+select set_config('request.jwt.claims','{"sub":"93000000-0000-0000-0000-000000000003","role":"authenticated"}',true);
+select is((select count(*) from public.business_world_configs where organization_id=current_setting('test.world_org')::uuid),1::bigint,'member can read shared layout');
+select is_empty($$update public.business_world_configs set suggestion_key='viewer' where organization_id=current_setting('test.world_org')::uuid returning organization_id$$,'viewer cannot change shared settings');
+select is((select count(*) from public.business_world_preferences where organization_id=current_setting('test.world_org')::uuid),0::bigint,'member cannot read owner preferences');
+reset role;
+update public.organization_memberships set status='suspended' where organization_id=current_setting('test.world_org')::uuid and user_id='93000000-0000-0000-0000-000000000003';
+set local role authenticated;
+select is((select count(*) from public.business_world_configs where organization_id=current_setting('test.world_org')::uuid),0::bigint,'revoked member loses layout access');
+select is(private.world_topic_allowed('world:'||current_setting('test.world_org')||':config'),false,'revoked member loses channel access');
+select * from finish();
+rollback;

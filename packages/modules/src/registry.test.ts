@@ -34,7 +34,7 @@ describe("module navigation", () => {
       { definition: definition("sales"), businessModule: { businessId: "business", moduleKey: "sales", enabled: true, configuration: {}, activatedAt: "2026-01-01" } },
       { definition: definition("inventory"), businessModule: null },
     ];
-    expect(buildModuleNavigation("business", registry)).toEqual([{ key: "sales", label: "sales", icon: "boxes", href: "/business/business/modules/sales" }]);
+    expect(buildModuleNavigation("business", registry)).toEqual([{ key: "sales", label: "sales", icon: "boxes", href: "/business/business/sales" }]);
   });
 
   it("uses the configured Job Order name in business navigation", () => {

@@ -21,8 +21,9 @@ export async function listPosCatalog(businessId:string,locationId:string):Promis
 export async function listSalesCustomers(businessId:string){const{id,client}=await reader(businessId);const result=await client.from("sales_customers").select("*").eq("organization_id",id).order("name").limit(500);if(result.error)throw fail("Customers could not be loaded.",result.error);return result.data.map(customer);}
 export async function listSales(businessId:string,limit=50){const{id,client}=await reader(businessId);const result=await client.from("sales_transactions").select("*").eq("organization_id",id).order("created_at",{ascending:false}).limit(Math.min(200,Math.max(1,limit)));if(result.error)throw fail("Sales could not be loaded.",result.error);return result.data.map(row=>sale(row));}
 export async function getSale(businessId:string,saleId:string){const{id,client}=await reader(businessId);const parsed=SaleIdSchema.parse(saleId);const[result,lines,payments,customers]=await Promise.all([client.from("sales_transactions").select("*").eq("organization_id",id).eq("id",parsed).single(),client.from("sales_lines").select("*").eq("organization_id",id).eq("sale_id",parsed).order("created_at"),client.from("sales_payments").select("*").eq("organization_id",id).eq("sale_id",parsed).order("created_at"),client.from("sales_customers").select("*").eq("organization_id",id)]);const error=result.error??lines.error??payments.error??customers.error;if(error||!result.data)throw fail("Sale could not be loaded.",error);const assigned=result.data.customer_id?(customers.data??[]).find(value=>value.id===result.data.customer_id):undefined;return sale(result.data,(lines.data??[]).map(line),(payments.data??[]).map(payment),assigned?customer(assigned):null);}
-export async function getSalesDashboard(businessId: string): Promise<SalesDashboard> {
+export async function getSalesDashboard(businessId: string, branchId?: string): Promise<SalesDashboard> {
   const { id, client } = await reader(businessId);
+  if (branchId) await requireCapability(await requireAuthenticatedUser(client), PERMISSIONS.salesRead, { businessId: id, branchId }, client);
   // Business settings currently support Asia/Manila only (UTC+08, no DST).
   const today = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Manila", year: "numeric", month: "2-digit", day: "2-digit",
@@ -35,7 +36,7 @@ export async function getSalesDashboard(businessId: string): Promise<SalesDashbo
   // Recent activity is a preview, never the source for a daily financial total.
   // Follow the actual returned length because the API may cap pages below 500.
   do {
-    const result = await client.from("sales_transactions")
+    let query = client.from("sales_transactions")
       .select("id,total", { count: "exact" })
       .eq("organization_id", id)
       .in("status", ["completed", "partially_returned", "returned", "refunded"])
@@ -43,6 +44,8 @@ export async function getSalesDashboard(businessId: string): Promise<SalesDashbo
       .lt("completed_at", end.toISOString())
       .order("completed_at").order("id")
       .range(offset, offset + 499);
+    if (branchId) query = query.eq("branch_id", branchId);
+    const result = await query;
     if (result.error || result.count === null || !result.data) {
       throw fail("Today's sales could not be calculated.", result.error);
     }
@@ -57,7 +60,7 @@ export async function getSalesDashboard(businessId: string): Promise<SalesDashbo
     offset += result.data.length;
   } while (offset < expectedCount);
 
-  const recentSales = await listSales(id, 20);
+  const recentSales = (await listSales(id, 20)).filter(sale => !branchId || sale.branchId === branchId);
   const todaySales = totalCentavos / 100;
   // Original completed receipt totals, including tax, before returns/refunds.
   // Net sales and profit are separate metrics with different definitions.

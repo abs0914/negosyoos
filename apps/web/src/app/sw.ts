@@ -2,7 +2,7 @@
 
 import { defaultCache } from "@serwist/next/worker";
 import type { PrecacheEntry, SerwistGlobalConfig } from "serwist";
-import { Serwist } from "serwist";
+import { NetworkOnly, Serwist } from "serwist";
 
 declare const self: ServiceWorkerGlobalScope & SerwistGlobalConfig & {
   __SW_MANIFEST: Array<PrecacheEntry | string>;
@@ -15,7 +15,10 @@ const serwist = new Serwist({
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
-  runtimeCaching: defaultCache,
+  runtimeCaching: [
+    { matcher: ({ url }) => /^\/api\/businesses\/[^/]+\/world$/.test(url.pathname), handler: new NetworkOnly() },
+    ...defaultCache,
+  ],
 });
 
 serwist.addEventListeners();

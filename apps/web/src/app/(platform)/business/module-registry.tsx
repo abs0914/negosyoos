@@ -1,13 +1,14 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
+import Link from "next/link";
 
 import type {
   ModuleConfigurationField,
   ModuleConfigurationValue,
   ModuleRegistryEntry,
 } from "@negosyo-os/modules";
-import { Button } from "@negosyo-os/ui";
+import { Button, Icon } from "@negosyo-os/ui";
 
 import {
   setBusinessModuleStateAction,
@@ -88,24 +89,26 @@ function ModuleCard({
     <article className="rounded-2xl border bg-card p-6" id={entry.definition.key}>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{entry.definition.category} · {entry.definition.icon}</p>
+          <Icon className="mb-3 text-primary" name={entry.definition.key} size={24}/>
           <h2 className="mt-1 text-xl font-semibold">{entry.definition.name}</h2>
           <p className="mt-2 text-sm text-muted-foreground">{entry.definition.description}</p>
         </div>
         <span className={enabled ? "rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary" : "rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground"}>
-          {enabled ? "Enabled" : "Disabled"}
+          {enabled ? "Active" : "Available"}
         </span>
       </div>
 
       <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
-        <div><dt className="text-muted-foreground">Version</dt><dd className="font-medium">v{entry.definition.version}</dd></div>
         <div><dt className="text-muted-foreground">Minimum plan</dt><dd className="font-medium capitalize">{entry.definition.minimumPlan}</dd></div>
+        <div><dt className="text-muted-foreground">Plan details</dt><dd><Link className="text-primary underline" href={`/business/${businessId}/billing`}>Compare plans</Link></dd></div>
       </dl>
       {entry.definition.dependencies.length > 0 ? (
-        <p className="mt-4 text-xs text-muted-foreground">Requires: <span className="font-medium text-foreground">{entry.definition.dependencies.join(", ")}</span></p>
+        <p className="mt-4 text-xs text-muted-foreground">Also needs: <span className="font-medium capitalize text-foreground">{entry.definition.dependencies.map(key => key === 'crm' ? 'Customers' : key === 'pos' ? 'Point of sale' : key.replaceAll('_', ' ')).join(", ")}</span></p>
       ) : null}
 
       {canManage ? (
+        <details className="module-options mt-5">
+        <summary className="cursor-pointer text-sm font-semibold text-primary">{enabled ? 'Manage this tool' : 'Set up this tool'}</summary>
         <form action={formAction} className="mt-6 space-y-4">
           <input name="enabled" type="hidden" value="true" />
           {fields.map(([fieldKey, field]) => (
@@ -118,12 +121,13 @@ function ModuleCard({
           ))}
           {state.message ? <p className={state.status === "success" ? "text-sm text-primary" : "text-sm text-destructive"} role="status">{state.message}</p> : null}
           <div className="flex flex-wrap gap-3">
-            <Button disabled={pending} type="submit">{pending ? "Saving…" : enabled ? "Save configuration" : "Activate module"}</Button>
+            <Button disabled={pending} type="submit">{pending ? "Saving…" : enabled ? "Save settings" : "Activate tool"}</Button>
             {enabled ? (
-              <Button className="border bg-background text-foreground hover:bg-muted" formAction={formAction} name="enabled" type="submit" value="false">Deactivate</Button>
+              <Button disabled={pending} variant="outline" formAction={formAction} name="enabled" type="submit" value="false">Deactivate</Button>
             ) : null}
           </div>
         </form>
+        </details>
       ) : null}
     </article>
   );
@@ -138,9 +142,14 @@ export function ModuleRegistry({
   entries: readonly ModuleRegistryEntry[];
   canManage: boolean;
 }) {
-  const categories = Map.groupBy(entries, (entry) => entry.definition.category);
+  const [query, setQuery] = useState('');
+  const [status, setStatus] = useState('all');
+  const visible = entries.filter(entry => `${entry.definition.name} ${entry.definition.description} ${entry.definition.category}`.toLowerCase().includes(query.trim().toLowerCase()) && (status === 'all' || (status === 'active' ? entry.businessModule?.enabled : !entry.businessModule?.enabled)));
+  const categories = Map.groupBy(visible, (entry) => entry.definition.category);
   return (
     <div className="space-y-12">
+      <div className="tool-filters"><label className="text-sm font-semibold">Find a tool<input className={`${inputClass} mt-2`} type="search" placeholder="Sales, stock, customers…" value={query} onChange={event => setQuery(event.target.value)}/></label><label className="text-sm font-semibold">Show<select className={`${inputClass} mt-2`} value={status} onChange={event => setStatus(event.target.value)}><option value="all">All tools</option><option value="active">Active tools</option><option value="available">Available tools</option></select></label><p className="text-sm text-muted-foreground" role="status">{visible.length} tools found</p></div>
+      {!visible.length ? <p className="rounded-xl border border-dashed p-8 text-center text-muted-foreground">No tools match these filters. Try another search or choose All tools.</p> : null}
       {[...categories.entries()].map(([category, categoryEntries]) => (
         <section key={category}>
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">{category}</h2>

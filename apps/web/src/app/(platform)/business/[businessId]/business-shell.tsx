@@ -73,6 +73,8 @@ function Navigation({
     pathname: string;
     primaryItems: readonly BusinessShellNavItem[];
 }) {
+    const [query, setQuery] = useState('');
+    const matches = (item: BusinessShellNavItem) => collapsed || item.label.toLowerCase().includes(query.trim().toLowerCase());
     const [expanded, setExpanded] = useState<Record<string, boolean>>(() =>
         Object.fromEntries(
             groups.map((group, index) => [
@@ -110,12 +112,15 @@ function Navigation({
         );
     };
     return (
-        <nav aria-label="Business navigation" className="space-y-5">
-            <div className="space-y-1">{primaryItems.map(itemLink)}</div>
+        <nav aria-label="Business navigation" className="workspace-nav space-y-5">
+            {!collapsed ? <label className="workspace-tool-search"><Icon name="search" size={16} /><input aria-label="Find a business tool" placeholder="Find a tool…" type="search" value={query} onChange={(event) => setQuery(event.target.value)} /></label> : null}
+            <div className="space-y-1">{primaryItems.filter(matches).map(itemLink)}</div>
+            {!primaryItems.some(matches) && !groups.some((group) => group.items.some(matches)) ? <div className="workspace-search-empty" role="status"><p>No matching tools in your navigation.</p><Link className="mt-2 block font-semibold text-primary underline" href={`${base}/modules`} {...(onNavigate ? { onClick: onNavigate } : {})}>Browse available business tools →</Link></div> : null}
             {groups
+                .map((group) => ({ ...group, items: group.items.filter(matches) }))
                 .filter((group) => group.items.length)
                 .map((group) => {
-                    const open = expanded[group.label] ?? false;
+                    const open = Boolean(query.trim()) || (expanded[group.label] ?? false);
                     const activeCount = group.items.filter((item) => activePath(pathname, item.href, base)).length;
                     if (collapsed)
                         return (
@@ -166,18 +171,25 @@ export function BusinessShell({
     const [mobileOpen, setMobileOpen] = useState(false);
     const [collapsed, setCollapsed] = useState(false);
     const closeRef = useRef<HTMLButtonElement>(null);
+    const dialogRef = useRef<HTMLDivElement>(null);
     useEffect(() => {
         if (!mobileOpen) return;
         const previous = document.body.style.overflow;
+        const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
         document.body.style.overflow = 'hidden';
         closeRef.current?.focus();
         return () => {
             document.body.style.overflow = previous;
+            previousFocus?.focus();
         };
     }, [mobileOpen]);
     const dailyItems = groups.find((group) => group.label === 'Daily operations')?.items ?? [];
+    const mobileWork = dailyItems.find((item) => item.href === `${base}/pos`) ?? dailyItems.find((item) => item.href === `${base}/sales`) ?? dailyItems[0];
     const coach = primaryItems.find((item) => item.icon === 'coach');
     const alerts = primaryItems.find((item) => item.icon === 'notifications');
+    const currentItem = [...primaryItems, ...groups.flatMap((group) => group.items)]
+        .filter((item) => activePath(pathname, item.href, base))
+        .sort((first, second) => second.href.length - first.href.length)[0];
     const businessAvatar = businessLogoUrl ? (
         <img alt="" className="h-full w-full object-contain p-1" src={businessLogoUrl} />
     ) : (
@@ -185,10 +197,11 @@ export function BusinessShell({
     );
     return (
         <div
-            className={`min-h-screen xl:grid ${collapsed ? 'xl:grid-cols-[5rem_minmax(0,1fr)]' : 'xl:grid-cols-[18rem_minmax(0,1fr)]'}`}
+            className={`workspace min-h-screen xl:grid ${collapsed ? 'xl:grid-cols-[5rem_minmax(0,1fr)]' : 'xl:grid-cols-[16rem_minmax(0,1fr)]'}`}
             style={themeStyle(theme)}
         >
-            <aside className="hidden h-screen flex-col border-r bg-card xl:sticky xl:top-0 xl:flex">
+            <a className="workspace-skip" href="#workspace-content">Skip to page content</a>
+            <aside inert={mobileOpen} className="workspace-sidebar hidden h-dvh flex-col border-r xl:sticky xl:top-0 xl:flex">
                 <div
                     className={`flex h-17 items-center border-b ${collapsed ? 'justify-center px-2' : 'justify-between px-5'}`}
                 >
@@ -217,7 +230,7 @@ export function BusinessShell({
                             <Icon name="panel-open" size={18} />
                         </button>
                     ) : (
-                        <Link className="group flex items-center gap-3 rounded-xl p-2 hover:bg-muted" href="/dashboard">
+                        <Link className="workspace-switcher group flex items-center gap-3 rounded-lg p-2 hover:bg-muted" href="/dashboard">
                             <span className="grid h-9 w-9 place-items-center overflow-hidden rounded-xl bg-primary-soft text-sm font-black text-primary">
                                 {businessAvatar}
                             </span>
@@ -233,6 +246,7 @@ export function BusinessShell({
                 </div>
                 <div className={`flex-1 overflow-y-auto py-4 ${collapsed ? 'px-2' : 'px-3'}`}>
                     <Navigation
+                        key={pathname}
                         base={base}
                         collapsed={collapsed}
                         groups={groups}
@@ -274,7 +288,7 @@ export function BusinessShell({
                     </Link>
                 </div>
             </aside>
-            <div className="min-w-0 pb-20 xl:pb-0">
+            <div inert={mobileOpen} className="min-w-0 pb-20 xl:pb-0">
                 <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-card/92 px-4 backdrop-blur-xl xl:px-6">
                     <div className="flex min-w-0 items-center gap-3 xl:hidden">
                         <Link aria-label="negosyoOS" href={base}>
@@ -282,12 +296,11 @@ export function BusinessShell({
                         </Link>
                         <div className="min-w-0">
                             <p className="truncate text-sm font-bold">{businessName}</p>
-                            <p className="text-[10px] font-semibold text-muted-foreground">Business workspace</p>
+                            <p className="text-[10px] font-semibold text-muted-foreground">{currentItem?.label ?? 'Business workspace'}</p>
                         </div>
                     </div>
                     <div className="hidden min-w-0 xl:block">
-                        <p className="truncate text-sm font-bold">{businessName}</p>
-                        <p className="text-[10px] font-semibold text-muted-foreground">Today’s workspace</p>
+                        <nav aria-label="Workspace location" className="workspace-context"><Link href={base}>{businessName}</Link><Icon name="chevron-right" size={14}/><span>{currentItem?.label ?? 'Workspace'}</span></nav>
                     </div>
                     <div className="flex items-center gap-1">
                         <Link
@@ -317,7 +330,7 @@ export function BusinessShell({
                         <b>{trial.daysRemaining} days</b> remain in your trial <span aria-hidden="true">→</span>
                     </Link>
                 ) : null}
-                <div>{children}</div>
+                <div className="workspace-content" id="workspace-content" tabIndex={-1}>{children}</div>
             </div>
             {mobileOpen ? (
                 <div
@@ -326,7 +339,15 @@ export function BusinessShell({
                     className="fixed inset-0 z-[70] xl:hidden"
                     onKeyDown={(event) => {
                         if (event.key === 'Escape') setMobileOpen(false);
+                        if (event.key === 'Tab') {
+                            const elements = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), input:not([disabled]), [tabindex="0"]') ?? []).filter((element) => element.getClientRects().length > 0);
+                            const first = elements[0];
+                            const last = elements[elements.length - 1];
+                            if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+                            if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+                        }
                     }}
+                    ref={dialogRef}
                     role="dialog"
                 >
                     <button
@@ -353,6 +374,7 @@ export function BusinessShell({
                         </div>
                         <div className="flex-1 overflow-y-auto px-3 py-4">
                             <Navigation
+                                key={pathname}
                                 base={base}
                                 groups={groups}
                                 onNavigate={() => setMobileOpen(false)}
@@ -382,6 +404,7 @@ export function BusinessShell({
                 </div>
             ) : null}
             <nav
+                inert={mobileOpen}
                 aria-label="Mobile business navigation"
                 className="pb-safe fixed inset-x-0 bottom-0 z-50 grid grid-cols-5 border-t bg-card/96 px-1 pt-1 backdrop-blur-xl xl:hidden"
             >
@@ -392,14 +415,13 @@ export function BusinessShell({
                     <Icon name="home" size={19} />
                     Home
                 </Link>
-                <button
+                <Link
                     className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold ${dailyItems.some((item) => activePath(pathname, item.href, base)) ? 'text-primary' : 'text-muted-foreground'}`}
-                    onClick={() => setMobileOpen(true)}
-                    type="button"
+                    href={mobileWork?.href ?? `${base}/modules`}
                 >
-                    <Icon name="sales" size={19} />
-                    Daily work
-                </button>
+                    <Icon name={mobileWork?.icon ?? 'modules'} size={19} />
+                    {mobileWork?.href === `${base}/pos` ? 'Sell' : mobileWork?.mobileLabel ?? mobileWork?.label ?? 'Tools'}
+                </Link>
                 {coach ? (
                     <Link
                         className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-bold ${activePath(pathname, coach.href, base) ? 'text-primary' : 'text-muted-foreground'}`}

@@ -34,6 +34,86 @@ export type Database = {
   }
   public: {
     Tables: {
+      business_world_preferences: {
+        Row: {
+          branch_id: string | null
+          landing_view: string
+          motion: string
+          organization_id: string
+          representation: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          branch_id?: string | null
+          landing_view?: string
+          motion?: string
+          organization_id: string
+          representation?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          branch_id?: string | null
+          landing_view?: string
+          motion?: string
+          organization_id?: string
+          representation?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_world_preferences_branch_id_organization_id_fkey"
+            columns: ["branch_id", "organization_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id", "organization_id"]
+          },
+          {
+            foreignKeyName: "business_world_preferences_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_world_configs: {
+        Row: {
+          config: Json
+          created_at: string
+          organization_id: string
+          schema_version: number
+          suggestion_key: string
+          updated_at: string
+        }
+        Insert: {
+          config: Json
+          created_at?: string
+          organization_id: string
+          schema_version?: number
+          suggestion_key: string
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          organization_id?: string
+          schema_version?: number
+          suggestion_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_world_configs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_checkouts: {
         Row: {
           id: string
@@ -9482,6 +9562,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      business_world_modules: {
+        Args: { requested_organization_id: string }
+        Returns: string[]
+      }
       add_customer_note: {
         Args: {
           requested_customer_id: string

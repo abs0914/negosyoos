@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { listBranches } from "@negosyo-os/business/server";
 import { listCustomers, listCustomerSegments } from "@negosyo-os/crm/server";
+import { Icon, PageHeader } from "@negosyo-os/ui";
 
 const money = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" });
 
@@ -27,29 +28,27 @@ export default async function CustomersPage({
   ]);
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-sm font-semibold text-primary">CRM</p>
-          <h1 className="mt-1 text-3xl font-semibold">Customers</h1>
-          <p className="mt-2 text-muted-foreground">Customer relationships, sales history, and loyalty in one place.</p>
-        </div>
-        <div className="flex gap-2">
-          <Link className="rounded-lg border px-4 py-2 text-sm font-semibold" href={`/business/${businessId}/customers/segments`}>Segments</Link>
-          <Link className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground" href={`/business/${businessId}/customers/new`}>New customer</Link>
-        </div>
-      </div>
+    <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <PageHeader
+        eyebrow="Customer relationships"
+        title="Customers"
+        description="Find customer records, sales history, and loyalty details."
+        actions={<>
+          <Link className="inline-flex min-h-12 items-center rounded-lg border bg-card px-4 text-sm font-semibold hover:bg-muted" href={`/business/${businessId}/customers/segments`}>Segments</Link>
+          <Link className="site-button" href={`/business/${businessId}/customers/new`}><Icon name="plus" size={17} /> New customer</Link>
+        </>}
+      />
 
-      <form className="mt-6 grid gap-2 rounded-2xl border bg-card p-4 md:grid-cols-[2fr_repeat(4,1fr)_auto]">
-        <input className="min-h-11 rounded-lg border px-3" defaultValue={query.q} name="q" placeholder="Name, mobile, email, company, or tag" />
-        <select className="min-h-11 rounded-lg border px-3" defaultValue={query.branchId} name="branchId"><option value="">All branches</option>{branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}</select>
-        <select className="min-h-11 rounded-lg border px-3" defaultValue={query.customerType} name="customerType"><option value="">All types</option><option value="retail">Retail</option><option value="wholesale">Wholesale</option><option value="corporate">Corporate</option><option value="vip">VIP</option><option value="other">Other</option></select>
-        <select className="min-h-11 rounded-lg border px-3" defaultValue={query.segmentId} name="segmentId"><option value="">All segments</option>{segments.map((segment) => <option key={segment.id} value={segment.id}>{segment.name}</option>)}</select>
-        <input className="min-h-11 rounded-lg border px-3" defaultValue={query.tag} name="tag" placeholder="Tag" />
-        <button className="min-h-11 rounded-lg border px-4 font-semibold">Search</button>
+      <form aria-label="Filter customers" className="mt-6 grid gap-2 rounded-xl border bg-card p-4 text-sm sm:grid-cols-2 lg:grid-cols-[repeat(3,minmax(0,1fr))] 2xl:grid-cols-[minmax(0,2fr)_repeat(4,minmax(0,1fr))_auto]">
+        <input aria-label="Search customers" className="min-h-11 min-w-0 rounded-lg border px-3" defaultValue={query.q} name="q" placeholder="Name, mobile, email, company, or tag" />
+        <select aria-label="Branch" className="min-h-11 min-w-0 rounded-lg border px-3" defaultValue={query.branchId} name="branchId"><option value="">All branches</option>{branches.map((branch) => <option key={branch.id} value={branch.id}>{branch.name}</option>)}</select>
+        <select aria-label="Customer type" className="min-h-11 min-w-0 rounded-lg border px-3" defaultValue={query.customerType} name="customerType"><option value="">All types</option><option value="retail">Retail</option><option value="wholesale">Wholesale</option><option value="corporate">Corporate</option><option value="vip">VIP</option><option value="other">Other</option></select>
+        <select aria-label="Segment" className="min-h-11 min-w-0 rounded-lg border px-3" defaultValue={query.segmentId} name="segmentId"><option value="">All segments</option>{segments.map((segment) => <option key={segment.id} value={segment.id}>{segment.name}</option>)}</select>
+        <input aria-label="Tag" className="min-h-11 min-w-0 rounded-lg border px-3" defaultValue={query.tag} name="tag" placeholder="Tag" />
+        <button className="min-h-11 rounded-lg border px-4 font-semibold hover:bg-muted" type="submit">Search</button>
       </form>
 
-      <div className="mt-5 overflow-x-auto rounded-2xl border bg-card">
+      <div aria-label="Customer records" className="mt-5 overflow-x-auto rounded-xl border bg-card" role="region" tabIndex={0}>
         <table className="w-full min-w-[900px] text-left text-sm">
           <thead className="bg-muted"><tr><th className="p-3">Customer</th><th className="p-3">Mobile</th><th className="p-3">Branch / type</th><th className="p-3">Transactions</th><th className="p-3">Lifetime sales</th><th className="p-3">Last purchase</th><th className="p-3">Balance</th></tr></thead>
           <tbody>

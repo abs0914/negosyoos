@@ -1,1 +1,52 @@
-import Link from"next/link";import{getSalesDashboard}from"@negosyo-os/sales/server";const money=new Intl.NumberFormat("en-PH",{style:"currency",currency:"PHP"});export default async function SalesPage({params}:{params:Promise<{businessId:string}>}){const{businessId}=await params;const dashboard=await getSalesDashboard(businessId);return <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6"><div className="flex justify-between gap-4"><div><p className="text-sm font-semibold text-primary">Sales</p><h1 className="text-3xl font-semibold">Transactions</h1></div><Link className="h-fit rounded-lg bg-primary px-4 py-3 font-semibold text-primary-foreground" href={`/business/${businessId}/pos`}>Open POS</Link></div><div className="mt-6 grid grid-cols-3 gap-3">{[["Today’s receipt totals",money.format(dashboard.todaySales)],["Transactions",dashboard.todayTransactions],["Average",money.format(dashboard.averageSale)]].map(([k,v])=><div className="rounded-xl border bg-card p-4" key={k}><p className="text-xs text-muted-foreground">{k}</p><p className="mt-1 text-xl font-semibold">{v}</p></div>)}</div><p className="mt-3 text-sm text-muted-foreground">All accessible receipts completed today in Philippine time, including tax, before returns and refunds. These totals are not net sales, profit, or cash collected. The table shows the 20 most recent transactions.</p><div className="mt-6 overflow-x-auto rounded-xl border bg-card"><table className="w-full min-w-[620px] text-left text-sm"><thead className="bg-muted"><tr><th className="p-3">Receipt</th><th className="p-3">Date</th><th className="p-3">Status</th><th className="p-3">Total</th><th className="p-3">Paid</th></tr></thead><tbody>{dashboard.recentSales.map(s=><tr className="border-t" key={s.id}><td className="p-3"><Link className="font-mono font-semibold text-primary" href={`/business/${businessId}/sales/${s.id}`}>{s.receiptNumber}</Link></td><td className="p-3">{new Date(s.createdAt).toLocaleString("en-PH")}</td><td className="p-3 capitalize">{s.status.replace("_"," ")}</td><td className="p-3">{money.format(s.total)}</td><td className="p-3">{money.format(s.amountPaid)}</td></tr>)}</tbody></table></div></main>}
+import Link from "next/link";
+import { getSalesDashboard } from "@negosyo-os/sales/server";
+import { EmptyState, Icon, PageHeader, StatCard } from "@negosyo-os/ui";
+
+const money = new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" });
+
+export default async function SalesPage({ params }: { params: Promise<{ businessId: string }> }) {
+  const { businessId } = await params;
+  const dashboard = await getSalesDashboard(businessId);
+  const base = `/business/${businessId}`;
+
+  return (
+    <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <PageHeader
+        eyebrow="Sales"
+        title="Transactions"
+        description="Review today’s receipts and open recent sales."
+        actions={<Link className="site-button" href={`${base}/pos`}><Icon name="sales" size={17} /> Open POS</Link>}
+      />
+      <div className="mt-6 grid gap-3 min-[480px]:grid-cols-3">
+        <StatCard icon={<Icon name="sales" size={18} />} label="Today’s receipt totals" tone="success" value={money.format(dashboard.todaySales)} />
+        <StatCard icon={<Icon name="activity" size={18} />} label="Transactions" value={dashboard.todayTransactions} />
+        <StatCard icon={<Icon name="reports" size={18} />} label="Average sale" value={money.format(dashboard.averageSale)} />
+      </div>
+      <p className="mt-3 text-sm leading-6 text-muted-foreground">Totals cover accessible receipts completed today in Philippine time, including tax and before returns and refunds. These totals differ from net sales, profit, and cash collected.</p>
+      <section aria-labelledby="recent-transactions" className="mt-8">
+        <h2 className="mb-3 text-xl font-semibold tracking-tight" id="recent-transactions">Recent transactions</h2>
+        {dashboard.recentSales.length ? (
+          <div aria-labelledby="recent-transactions" className="overflow-x-auto rounded-xl border bg-card" role="region" tabIndex={0}>
+            <table className="w-full min-w-[620px] text-left text-sm">
+              <caption className="sr-only">Up to 20 recent transactions</caption>
+              <thead className="bg-muted">
+                <tr><th className="p-3" scope="col">Receipt</th><th className="p-3" scope="col">Date</th><th className="p-3" scope="col">Status</th><th className="p-3 text-right" scope="col">Total</th><th className="p-3 text-right" scope="col">Paid</th></tr>
+              </thead>
+              <tbody>
+                {dashboard.recentSales.map((sale) => (
+                  <tr className="border-t" key={sale.id}>
+                    <td className="p-3"><Link className="font-mono font-semibold text-primary hover:underline" href={`${base}/sales/${sale.id}`}>{sale.receiptNumber}</Link></td>
+                    <td className="p-3">{new Date(sale.createdAt).toLocaleString("en-PH")}</td>
+                    <td className="p-3 capitalize">{sale.status.replace("_", " ")}</td>
+                    <td className="p-3 text-right tabular-nums">{money.format(sale.total)}</td>
+                    <td className="p-3 text-right tabular-nums">{money.format(sale.amountPaid)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : <EmptyState icon={<Icon name="sales" size={22} />} title="No recent transactions" description="Recent receipts will appear here after sales are recorded." />}
+      </section>
+    </main>
+  );
+}
