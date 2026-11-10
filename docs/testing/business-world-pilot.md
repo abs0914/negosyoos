@@ -1,6 +1,6 @@
 # Business World pilot
 
-Implemented as an optional route at `/business/[businessId]/world`. The dashboard remains the default unless a user chooses World for business selection. No production rollout was performed.
+Implemented as an optional route at `/business/[businessId]/world`. The dashboard remains the default unless a user chooses World for business selection. On 10 November 2026, deployed as an allowlisted production pilot for Sampaguita Test Store; see [production release verification](2026-11-10-production-release.md).
 
 ## Local preview and rollout
 
