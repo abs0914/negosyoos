@@ -13,6 +13,7 @@ export function MarketingPageShell({ children, home = false }: { readonly childr
           <Link aria-label="negosyoOS home" href="/"><Brand /></Link>
           {home ? (
             <nav aria-label="Main navigation" className="site-nav">
+              <a href="#world">Business World<span className="nav-new">New</span></a>
               <a href="#manage">What you can manage</a>
               <a href="#product-preview">Product tour</a>
               <a href="#how-it-works">How it works</a>
@@ -24,7 +25,7 @@ export function MarketingPageShell({ children, home = false }: { readonly childr
           </div>
         </div>
       </header>
-      {home ? <nav className="mobile-section-nav" aria-label="Homepage sections"><a href="#how-it-works">Your report</a><a href="#product-preview">Try the workflow</a><a href="#manage">Explore tools</a></nav> : null}
+      {home ? <nav className="mobile-section-nav" aria-label="Homepage sections"><a href="#how-it-works">Your report</a><a href="#world">3D World</a><a href="#product-preview">Try the workflow</a><a href="#manage">Explore tools</a></nav> : null}
       {children}
       <MarketingFooter />
     </div>

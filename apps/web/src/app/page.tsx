@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Icon } from "@negosyo-os/ui";
 
 import { LandingProductPreview } from "./landing-product-preview";
+import { LandingWorldShowcase } from "./landing-world-showcase";
 import { MarketingPageShell } from "./marketing-page-shell";
 import "./homepage.css";
 
@@ -62,7 +63,7 @@ export default function HomePage() {
             </div>
             <SampleReport />
           </div>
-          <div className="site-width hero-bottom"><span>Built around the way you work.</span><span>Assess <span aria-hidden="true">→</span> Prioritize <span aria-hidden="true">→</span> Take action</span></div>
+          <div className="site-width hero-bottom"><a className="hero-world-link" href="#world"><b>New</b> See your whole business in 3D <span aria-hidden="true">↓</span></a><span>Assess <span aria-hidden="true">→</span> Prioritize <span aria-hidden="true">→</span> Take action</span></div>
         </section>
 
         <section className="site-width report-explainer" id="how-it-works" aria-labelledby="report-heading">
@@ -74,15 +75,17 @@ export default function HomePage() {
           </ol><p className="privacy-note"><Icon name="shield" size={17} /> Your assessment answers stay on this device until you create your workspace.</p></div>
         </section>
 
+        <LandingWorldShowcase />
+
         <section className="workflow-section" id="product-preview" aria-labelledby="workflow-heading">
           <div className="site-width home-section">
-            <div className="workflow-heading"><div className="home-section-heading"><p className="design-label">02 / Put it into practice</p><h2 id="workflow-heading">From “ubos na?”<br />to a plan to restock.</h2></div><p className="section-intro">Follow a hardware store through one everyday task. Explore how an inventory alert becomes a draft purchase order.</p></div>
+            <div className="workflow-heading"><div className="home-section-heading"><p className="design-label">03 / Put it into practice</p><h2 id="workflow-heading">From “ubos na?”<br />to a plan to restock.</h2></div><p className="section-intro">Follow a hardware store through one everyday task. Explore how an inventory alert becomes a draft purchase order.</p></div>
             <LandingProductPreview />
           </div>
         </section>
 
         <section className="site-width home-section" id="manage" aria-labelledby="tools-heading">
-          <div className="tools-heading"><div className="home-section-heading"><p className="design-label">03 / Make it your workspace</p><h2 id="tools-heading">The tools for<br />your kind of work.</h2></div><p className="section-intro">Start with the priorities in your report. Bring more of your operations together as you need them.</p></div>
+          <div className="tools-heading"><div className="home-section-heading"><p className="design-label">04 / Make it your workspace</p><h2 id="tools-heading">The tools for<br />your kind of work.</h2></div><p className="section-intro">Start with the priorities in your report. Bring more of your operations together as you need them.</p></div>
           <div className="module-grid">{businessTools.map(({ title, description, detail, icon }, index) => (
             <article className="module-tile" key={title}><div className="module-top"><Icon name={icon} size={26} /><span className="design-label">0{index + 1}</span></div><h3>{title}</h3><p>{description}</p><p className="module-detail">{detail}</p></article>
           ))}</div>
